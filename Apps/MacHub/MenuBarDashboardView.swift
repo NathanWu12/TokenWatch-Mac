@@ -4,6 +4,7 @@ import SwiftUI
 
 struct MenuBarDashboardView: View {
     @Bindable var store: MacHubStore
+    @ObservedObject var updateController: MacUpdateController
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
     @Environment(\.locale) private var locale
@@ -24,6 +25,8 @@ struct MenuBarDashboardView: View {
                         .controlSize(.small)
                 }
             }
+
+            UpdateAvailableBanner(updateController: updateController)
 
             if store.enabledDetectedClientLocations.isEmpty {
                 Button {
@@ -114,6 +117,9 @@ struct MenuBarDashboardView: View {
         .frame(width: 380)
         .background(MacTheme.background)
         .preferredColorScheme(.dark)
+        .onAppear {
+            updateController.dashboardDidAppear()
+        }
     }
 
     private func total(for period: UsagePeriod) -> String {

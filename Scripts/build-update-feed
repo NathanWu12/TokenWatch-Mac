@@ -1,0 +1,112 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+artifact_root="${TOKENWATCH_ARTIFACTS:-$root/.artifacts}"
+release_dir="$artifact_root/MacLocalRelease"
+repo="NathanWu12/TokenWatch-Mac"
+key_account="com.nathanwu.TokenWatch"
+release_tag=""
+skip_build=false
+
+usage() {
+  cat <<'USAGE'
+Usage: Scripts/build-update-feed [--tag <git-tag>] [--skip-build]
+
+Builds the Sparkle appcast for the current TokenWatch Mac release ZIP.
+--skip-build reuses the existing MacLocalRelease ZIP (used by the publish script).
+USAGE
+}
+
+while (( $# > 0 )); do
+  case "$1" in
+    --tag)
+      [[ $# -ge 2 ]] || { print -u2 "--tag 需要值"; exit 2; }
+      release_tag="$2"
+      shift 2
+      ;;
+    --skip-build)
+      skip_build=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      print -u2 "未知参数：$1"
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ "$skip_build" != true ]]; then
+  "$root/Scripts/build-mac-local-release"
+fi
+
+app="$release_dir/DerivedData/Build/Products/Release/TokenWatch Mac.app"
+[[ -d "$app" ]] || { print -u2 "未找到 Release App：$app"; exit 1; }
+
+version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
+build_number="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$app/Contents/Info.plist")"
+[[ -n "$release_tag" ]] || release_tag="v${version}"
+[[ "$release_tag" == "v${version}"* ]] || {
+  print -u2 "Release tag ($release_tag) 必须以 v${version} 开头"
+  exit 1
+}
+
+archive="$release_dir/TokenWatch-Mac-v${version}-local-preview.zip"
+[[ -f "$archive" ]] || { print -u2 "未找到更新 ZIP：$archive"; exit 1; }
+
+sparkle_tools="${TOKENWATCH_SPARKLE_TOOLS:-}"
+if [[ -z "$sparkle_tools" ]]; then
+  sparkle_tools="$(find "$artifact_root" -type f -path '*/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast' -print -quit 2>/dev/null | xargs -I{} dirname {} || true)"
+fi
+[[ -x "$sparkle_tools/generate_appcast" ]] || {
+  print -u2 "未找到 Sparkle generate_appcast；先运行 Scripts/build 或 Scripts/build-mac-local-release"
+  exit 1
+}
+
+public_key="$(/usr/libexec/PlistBuddy -c "Print :SUPublicEDKey" "$app/Contents/Info.plist")"
+expected_key="$("$sparkle_tools/generate_keys" --account "$key_account" -p)"
+[[ "$public_key" == "$expected_key" ]] || {
+  print -u2 "Release App 的 SUPublicEDKey 与本机发布密钥不一致"
+  exit 1
+}
+
+feed_url="$(/usr/libexec/PlistBuddy -c "Print :SUFeedURL" "$app/Contents/Info.plist")"
+expected_feed="https://github.com/${repo}/releases/download/update-feed/appcast.xml"
+[[ "$feed_url" == "$expected_feed" ]] || {
+  print -u2 "Release App 的 SUFeedURL 不正确：$feed_url"
+  exit 1
+}
+
+stage="$(mktemp -d "$release_dir/appcast-input.XXXXXX")"
+cleanup() { rm -rf "$stage"; }
+trap cleanup EXIT
+cp "$archive" "$stage/"
+
+appcast="$release_dir/appcast.xml"
+rm -f "$appcast"
+print "△ 首次签名时 macOS 可能要求 generate_appcast 访问 TokenWatch 发布密钥；请选择始终允许。"
+"$sparkle_tools/generate_appcast" \
+  --account "$key_account" \
+  --download-url-prefix "https://github.com/${repo}/releases/download/${release_tag}/" \
+  --maximum-versions 1 \
+  -o "$appcast" \
+  "$stage"
+
+[[ -s "$appcast" ]] || { print -u2 "appcast.xml 未生成"; exit 1; }
+grep -Fq "sparkle:edSignature=" "$appcast" || { print -u2 "appcast 缺少 EdDSA 签名"; exit 1; }
+grep -Fq "releases/download/${release_tag}/${archive:t}" "$appcast" || {
+  print -u2 "appcast 下载地址与 Release tag/ZIP 不一致"
+  exit 1
+}
+
+print "✓ Sparkle 更新源生成完成"
+print "  版本：${version} (${build_number})"
+print "  Tag：${release_tag}"
+print "  Appcast：${appcast}"
+print "  更新包：${archive}"

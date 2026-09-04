@@ -42,11 +42,17 @@ private enum DashboardSection: String, CaseIterable, Identifiable {
 
 struct MacHubView: View {
     @Bindable var store: MacHubStore
+    @ObservedObject var updateController: MacUpdateController
     @Binding var languageIdentifier: String
     @State private var selection: DashboardSection
 
-    init(store: MacHubStore, languageIdentifier: Binding<String>) {
+    init(
+        store: MacHubStore,
+        updateController: MacUpdateController,
+        languageIdentifier: Binding<String>
+    ) {
         self.store = store
+        self.updateController = updateController
         _languageIdentifier = languageIdentifier
         _selection = State(
             initialValue: store.enabledDetectedClientLocations.isEmpty ? .settings : .usage
@@ -84,7 +90,11 @@ struct MacHubView: View {
                 case .limits:
                     LimitsDashboard(store: store)
                 case .settings:
-                    SettingsDashboard(store: store, languageIdentifier: $languageIdentifier)
+                    SettingsDashboard(
+                        store: store,
+                        updateController: updateController,
+                        languageIdentifier: $languageIdentifier
+                    )
                 }
             }
             .background(MacTheme.background)
@@ -1155,6 +1165,7 @@ private struct ProviderLimitCard: View {
 
 private struct SettingsDashboard: View {
     @Bindable var store: MacHubStore
+    @ObservedObject var updateController: MacUpdateController
     @Binding var languageIdentifier: String
     @Environment(\.locale) private var locale
 
@@ -1169,6 +1180,7 @@ private struct SettingsDashboard: View {
             MacSettingsView(
                 store: store,
                 embedded: true,
+                updateController: updateController,
                 languageIdentifier: $languageIdentifier
             )
         }

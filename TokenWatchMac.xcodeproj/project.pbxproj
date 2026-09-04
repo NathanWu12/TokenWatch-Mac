@@ -11,6 +11,7 @@
 		074D65875CB98E2436AA1A71 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 692503A40F18F6C5075D5CCC /* Localizable.xcstrings */; };
 		14EBA0C90E8C10CE500C3A1C /* Domain in Frameworks */ = {isa = PBXBuildFile; productRef = 129C14E4A3DF61B8C8222CD6 /* Domain */; };
 		2DC22CB30106AB8EB2EDF8B4 /* MacProviderAdapters in Frameworks */ = {isa = PBXBuildFile; productRef = 4603F39D643EBF1A2F0F5F99 /* MacProviderAdapters */; };
+		2F3C604B00980A708994ADA6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 82AAEDBBFCB6ECA5AA6BD5DE /* Sparkle */; };
 		3435482173CBEDC3240100EE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 32C63F781AAE5135E9A8554D /* Assets.xcassets */; };
 		4EE60A84B80A63B748E4DB77 /* TokenWatchMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A8D47D08685CA0CDB5B96E /* TokenWatchMacApp.swift */; };
 		51F28049870508DB0D6682C0 /* MacSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EE6F1CDCB9811171E8FCD2B /* MacSettingsView.swift */; };
@@ -22,23 +23,30 @@
 		B3DEDD090939BDF36C49B9D2 /* MacPeerPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E099391327666F3C1E1262C /* MacPeerPublisher.swift */; };
 		D24DAB06E2480006E5CF4AA2 /* SyncProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = 489ED0463E8093767D66F2CF /* SyncProtocol */; };
 		DA07703BE7D8A98C9DD0592A /* MacHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52A6B848E6B5B11012620C0 /* MacHubView.swift */; };
+		DD1A6F2453E117652DBD2275 /* Sparkle-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = C28C71272528693CDE4947F0 /* Sparkle-LICENSE.txt */; };
+		E6AC39BD9ADE8DCA7DEAEE64 /* MacUpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F300F161F5C9FA0AE5755DF /* MacUpdateController.swift */; };
+		FB0CE18E53009B5D22F46B0F /* UpdateAvailableBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F887349AB342C55F6F46F392 /* UpdateAvailableBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		02BA7D32A0CB65F2F88A3774 /* MacHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BF35B604E243E14BE888519 /* MacHub.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacHub.entitlements; sourceTree = "<group>"; };
 		0E099391327666F3C1E1262C /* MacPeerPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPeerPublisher.swift; sourceTree = "<group>"; };
-		10DC47597FB431B24A263767 /* feat-provider-auto-discovery */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "feat-provider-auto-discovery"; path = .; sourceTree = SOURCE_ROOT; };
 		32C63F781AAE5135E9A8554D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		40A240ABE9445704B8E85453 /* MacHubStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHubStore.swift; sourceTree = "<group>"; };
+		41D73C0757D7615AAAB42879 /* TokenWatch-Mac-release-updater */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "TokenWatch-Mac-release-updater"; path = .; sourceTree = SOURCE_ROOT; };
 		692503A40F18F6C5075D5CCC /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		6EE6F1CDCB9811171E8FCD2B /* MacSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSettingsView.swift; sourceTree = "<group>"; };
+		7F300F161F5C9FA0AE5755DF /* MacUpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacUpdateController.swift; sourceTree = "<group>"; };
 		B52A6B848E6B5B11012620C0 /* MacHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHubView.swift; sourceTree = "<group>"; };
 		BF132BEC21AB3EC0B3B1E7A4 /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
+		C28C71272528693CDE4947F0 /* Sparkle-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Sparkle-LICENSE.txt"; sourceTree = "<group>"; };
 		C7D727D754CA225039BBBF40 /* MacHubLocalOnly.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacHubLocalOnly.entitlements; sourceTree = "<group>"; };
 		D1A8D47D08685CA0CDB5B96E /* TokenWatchMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenWatchMacApp.swift; sourceTree = "<group>"; };
+		DBE7EF14493526E118442E32 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E235318703E3C6B04FC81D46 /* StatusPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPresentation.swift; sourceTree = "<group>"; };
 		ECD8590781DA73898E4DA101 /* MenuBarDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarDashboardView.swift; sourceTree = "<group>"; };
+		F887349AB342C55F6F46F392 /* UpdateAvailableBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAvailableBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +60,7 @@
 				9A84D17F1FC17482B389127F /* SyncSecurity in Frameworks */,
 				683E441A645AD8579CEABFE3 /* RemoteSync in Frameworks */,
 				564C434864D2425E72480D20 /* LocalTransport in Frameworks */,
+				2F3C604B00980A708994ADA6 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,7 +70,7 @@
 		01B273F34AE5A85E634D76F7 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				10DC47597FB431B24A263767 /* feat-provider-auto-discovery */,
+				41D73C0757D7615AAAB42879 /* TokenWatch-Mac-release-updater */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -87,6 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				32C63F781AAE5135E9A8554D /* Assets.xcassets */,
+				DBE7EF14493526E118442E32 /* Info.plist */,
 				692503A40F18F6C5075D5CCC /* Localizable.xcstrings */,
 				0BF35B604E243E14BE888519 /* MacHub.entitlements */,
 				C7D727D754CA225039BBBF40 /* MacHubLocalOnly.entitlements */,
@@ -94,8 +104,11 @@
 				B52A6B848E6B5B11012620C0 /* MacHubView.swift */,
 				0E099391327666F3C1E1262C /* MacPeerPublisher.swift */,
 				6EE6F1CDCB9811171E8FCD2B /* MacSettingsView.swift */,
+				7F300F161F5C9FA0AE5755DF /* MacUpdateController.swift */,
 				ECD8590781DA73898E4DA101 /* MenuBarDashboardView.swift */,
+				C28C71272528693CDE4947F0 /* Sparkle-LICENSE.txt */,
 				D1A8D47D08685CA0CDB5B96E /* TokenWatchMacApp.swift */,
+				F887349AB342C55F6F46F392 /* UpdateAvailableBanner.swift */,
 			);
 			name = MacHub;
 			path = Apps/MacHub;
@@ -143,6 +156,7 @@
 				969D1DC0D043A260A25DF7B8 /* SyncSecurity */,
 				2768F8008888B9252EDA55E7 /* RemoteSync */,
 				D4F7577DCAF295CBFCF9AAF0 /* LocalTransport */,
+				82AAEDBBFCB6ECA5AA6BD5DE /* Sparkle */,
 			);
 			productName = MacHub;
 			productReference = 02BA7D32A0CB65F2F88A3774 /* MacHub.app */;
@@ -183,6 +197,7 @@
 			mainGroup = DFB498891375B38EC76F7547;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				5B877C1444DAD42F07903B17 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				E3B69C008E192E037B26A969 /* XCLocalSwiftPackageReference "." */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -202,6 +217,7 @@
 			files = (
 				3435482173CBEDC3240100EE /* Assets.xcassets in Resources */,
 				074D65875CB98E2436AA1A71 /* Localizable.xcstrings in Resources */,
+				DD1A6F2453E117652DBD2275 /* Sparkle-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,9 +232,11 @@
 				DA07703BE7D8A98C9DD0592A /* MacHubView.swift in Sources */,
 				B3DEDD090939BDF36C49B9D2 /* MacPeerPublisher.swift in Sources */,
 				51F28049870508DB0D6682C0 /* MacSettingsView.swift in Sources */,
+				E6AC39BD9ADE8DCA7DEAEE64 /* MacUpdateController.swift in Sources */,
 				026AF4F1E11F93F943D239EA /* MenuBarDashboardView.swift in Sources */,
 				A54432C78B5114D58A459C0F /* StatusPresentation.swift in Sources */,
 				4EE60A84B80A63B748E4DB77 /* TokenWatchMacApp.swift in Sources */,
+				FB0CE18E53009B5D22F46B0F /* UpdateAvailableBanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,13 +250,7 @@
 				CODE_SIGN_ENTITLEMENTS = Apps/MacHub/MacHub.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "TokenWatch Mac";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSBonjourServices = (
-					"_tokenwatch-p0._tcp",
-				);
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "TokenWatch 使用本地网络与已配对的 iPhone 安全同步用量。";
+				INFOPLIST_FILE = Apps/MacHub/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -256,13 +268,7 @@
 				CODE_SIGN_ENTITLEMENTS = Apps/MacHub/MacHub.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "TokenWatch Mac";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSBonjourServices = (
-					"_tokenwatch-p0._tcp",
-				);
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "TokenWatch 使用本地网络与已配对的 iPhone 安全同步用量。";
+				INFOPLIST_FILE = Apps/MacHub/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -420,6 +426,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		5B877C1444DAD42F07903B17 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.9.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		129C14E4A3DF61B8C8222CD6 /* Domain */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -436,6 +453,11 @@
 		489ED0463E8093767D66F2CF /* SyncProtocol */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SyncProtocol;
+		};
+		82AAEDBBFCB6ECA5AA6BD5DE /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B877C1444DAD42F07903B17 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 		969D1DC0D043A260A25DF7B8 /* SyncSecurity */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -17,6 +17,9 @@ options:
 packages:
   TokenWatchCore:
     path: .
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.9.6
 
 targets:
   MacHub:
@@ -38,18 +41,31 @@ targets:
         product: RemoteSync
       - package: TokenWatchCore
         product: LocalTransport
+      - package: Sparkle
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.nathanwu.TokenWatch.MacHub
         PRODUCT_NAME: TokenWatch Mac
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: TokenWatch Mac
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
-        INFOPLIST_KEY_NSLocalNetworkUsageDescription: TokenWatch 使用本地网络与已配对的 iPhone 安全同步用量。
-        INFOPLIST_KEY_NSBonjourServices:
+    info:
+      path: Apps/MacHub/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDisplayName: TokenWatch Mac
+        LSApplicationCategoryType: public.app-category.developer-tools
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHighResolutionCapable: true
+        NSLocalNetworkUsageDescription: TokenWatch 使用本地网络与已配对的 iPhone 安全同步用量。
+        NSBonjourServices:
           - _tokenwatch-p0._tcp
+        SUFeedURL: https://github.com/NathanWu12/TokenWatch-Mac/releases/download/update-feed/appcast.xml
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 3600
+        SUAllowsAutomaticUpdates: true
+        SUAutomaticallyUpdate: false
+        SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
     entitlements:
       path: Apps/MacHub/MacHub.entitlements
       properties:

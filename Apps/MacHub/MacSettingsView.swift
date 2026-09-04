@@ -8,16 +8,19 @@ struct MacSettingsView: View {
     @Bindable var store: MacHubStore
     let embedded: Bool
     @State private var launchAtLogin = LaunchAtLoginController()
+    @ObservedObject var updateController: MacUpdateController
     @Binding var languageIdentifier: String
     @Environment(\.locale) private var locale
 
     init(
         store: MacHubStore,
         embedded: Bool = false,
+        updateController: MacUpdateController,
         languageIdentifier: Binding<String>
     ) {
         self.store = store
         self.embedded = embedded
+        self.updateController = updateController
         _languageIdentifier = languageIdentifier
     }
 
@@ -134,6 +137,49 @@ struct MacSettingsView: View {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.red)
+                }
+            }
+
+            Section("更新") {
+                Toggle(
+                    "自动检测更新",
+                    isOn: Binding(
+                        get: { updateController.automaticallyChecksForUpdates },
+                        set: { updateController.setAutomaticallyChecksForUpdates($0) }
+                    )
+                )
+
+                Text("打开 TokenWatch 时检查更新，并每小时在后台检测。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle(
+                    "自动更新",
+                    isOn: Binding(
+                        get: { updateController.automaticallyDownloadsUpdates },
+                        set: { updateController.setAutomaticallyDownloadsUpdates($0) }
+                    )
+                )
+                .disabled(!updateController.allowsAutomaticUpdates)
+
+                Text("启用后，更新会在后台自动下载，并由系统在合适时机完成安装。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack {
+                    Button("检查更新") {
+                        updateController.checkForUpdates()
+                    }
+                    .disabled(!updateController.canCheckForUpdates)
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Text("当前版本")
+                        Text(verbatim: updateController.currentVersion)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
 

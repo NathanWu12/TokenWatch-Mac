@@ -3,9 +3,10 @@
 set -euo pipefail
 
 root="${0:A:h:h}"
+artifact_root="${TOKENWATCH_ARTIFACTS:-$root/.artifacts}"
 "$root/Scripts/build-mac-local-release"
 
-release_dir="$root/.artifacts/MacLocalRelease"
+release_dir="$artifact_root/MacLocalRelease"
 app="$release_dir/DerivedData/Build/Products/Release/TokenWatch Mac.app"
 [[ -d "$app" ]] || { print -u2 "未找到 Release App：$app"; exit 1; }
 
