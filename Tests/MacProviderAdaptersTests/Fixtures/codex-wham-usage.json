@@ -1,0 +1,39 @@
+{
+  "rate_limit": {
+    "primary_window": {
+      "used_percent": 31,
+      "limit_window_seconds": 604800,
+      "reset_at": 1900600000
+    },
+    "secondary_window": {
+      "used_percent": 12.4,
+      "limit_window_seconds": 18000,
+      "reset_at": 1900000000
+    }
+  },
+  "spend_control": {
+    "individual_limit": {
+      "limit": "1000",
+      "used": "125",
+      "used_percent": 0,
+      "reset_at": 1900000000
+    }
+  },
+  "additional_rate_limits": [
+    {
+      "limit_name": "GPT Codex Spark",
+      "rate_limit": {
+        "primary_window": {
+          "used_percent": 18,
+          "limit_window_seconds": 604800,
+          "reset_at": 1900600000
+        },
+        "secondary_window": {
+          "used_percent": 4,
+          "limit_window_seconds": 18000,
+          "reset_at": 1900000000
+        }
+      }
+    }
+  ]
+}

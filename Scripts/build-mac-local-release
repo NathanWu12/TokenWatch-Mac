@@ -1,0 +1,102 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+artifact_root="${TOKENWATCH_ARTIFACTS:-$root/.artifacts}"
+release_dir="$artifact_root/MacLocalRelease"
+derived_data="$release_dir/DerivedData"
+entitlements_file="$(mktemp)"
+
+cleanup() {
+  rm -f "$entitlements_file"
+}
+trap cleanup EXIT
+
+developer_dir="$(xcode-select -p 2>/dev/null || true)"
+if [[ "$developer_dir" != *"/Xcode.app/Contents/Developer"* ]] \
+  || ! command -v xcodebuild >/dev/null 2>&1 \
+  || ! xcrun --sdk macosx --show-sdk-path >/dev/null 2>&1; then
+  print -u2 "需要启用包含 macOS SDK 的完整 Xcode"
+  exit 1
+fi
+
+mkdir -p "$release_dir"
+
+xcodebuild \
+  -project "$root/TokenWatchMac.xcodeproj" \
+  -scheme MacHub \
+  -configuration Release \
+  -destination "generic/platform=macOS" \
+  -derivedDataPath "$derived_data" \
+  CODE_SIGN_ENTITLEMENTS="$root/Apps/MacHub/MacHubLocalOnly.entitlements" \
+  CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
+  CODE_SIGN_IDENTITY=- \
+  DEVELOPMENT_TEAM= \
+  build
+
+app="$derived_data/Build/Products/Release/TokenWatch Mac.app"
+[[ -d "$app" ]] || {
+  print -u2 "找不到 Mac App 构建产物：$app"
+  exit 1
+}
+
+codesign --verify --deep --strict "$app"
+codesign -d --entitlements :- "$app" >"$entitlements_file" 2>/dev/null
+
+if /usr/libexec/PlistBuddy -c "Print :com.apple.developer.icloud-services" \
+  "$entitlements_file" >/dev/null 2>&1; then
+  print -u2 "Local-only 构建意外包含 CloudKit entitlement"
+  exit 1
+fi
+
+if /usr/libexec/PlistBuddy -c "Print :com.apple.security.get-task-allow" \
+  "$entitlements_file" >/dev/null 2>&1; then
+  print -u2 "Local-only 构建意外包含 get-task-allow entitlement"
+  exit 1
+fi
+
+if /usr/libexec/PlistBuddy -c "Print :com.apple.security.app-sandbox" \
+  "$entitlements_file" >/dev/null 2>&1; then
+  print -u2 "零配置 Provider 构建不得启用 App Sandbox"
+  exit 1
+fi
+
+if /usr/libexec/PlistBuddy -c "Print :com.apple.security.files.user-selected.read-only" \
+  "$entitlements_file" >/dev/null 2>&1; then
+  print -u2 "零配置 Provider 构建不得依赖 user-selected 文件授权"
+  exit 1
+fi
+
+signature_details="$(codesign -dv --verbose=4 "$app" 2>&1)"
+if [[ "$signature_details" != *"runtime"* ]]; then
+  print -u2 "Mac Release 构建必须启用 Hardened Runtime"
+  exit 1
+fi
+
+executable="$app/Contents/MacOS/TokenWatch Mac"
+architectures="$(lipo -archs "$executable")"
+[[ " $architectures " == *" arm64 "* && " $architectures " == *" x86_64 "* ]] || {
+  print -u2 "构建产物不是 Universal binary：$architectures"
+  exit 1
+}
+
+version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
+build_number="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$app/Contents/Info.plist")"
+archive="$release_dir/TokenWatch-Mac-v${version}-local-preview.zip"
+checksum="$archive.sha256"
+
+rm -f "$archive" "$checksum"
+ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
+(
+  cd "$release_dir"
+  shasum -a 256 "${archive:t}" >"${checksum:t}"
+)
+
+print "✓ TokenWatch Mac local-only Release 构建完成"
+print "  版本：${version} (${build_number})"
+print "  架构：$architectures"
+print "  App：$app"
+print "  ZIP：$archive"
+print "  SHA-256：$checksum"
+print "△ 这是 ad-hoc 签名且未经 Apple 公证的预发布包，不包含 CloudKit。"

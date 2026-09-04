@@ -1,0 +1,12 @@
+.build-tools/
+.artifacts/
+.build/
+DerivedData/
+*.xcresult
+.DS_Store
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+tokenwatch-live-preview.json
+*.profraw

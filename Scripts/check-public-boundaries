@@ -1,0 +1,40 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+
+for forbidden_directory in iPhoneCompanion iPhoneWidgets WatchApp WatchComplication; do
+  if [[ -d "$root/Apps/$forbidden_directory" ]]; then
+    print -u2 "公开边界检查失败：发现 Apps/$forbidden_directory"
+    exit 1
+  fi
+done
+
+for forbidden in \
+  'PhoneDirectProviderStore' 'CodexDirectProviderClient' \
+  'ClaudeDirectProviderClient' 'ASWebAuthenticationSession' \
+  'app_EMoamEEZ73f0CkXaXp7hrann' \
+  '9d1c250a-e61b-44d9-88ed-5944d1962f5e'; do
+  if command -v rg >/dev/null 2>&1; then
+    found=$(rg -l --hidden --glob '!.git/**' --glob '!.artifacts/**' \
+      --glob '!Scripts/check-public-boundaries' --fixed-strings "$forbidden" "$root" | head -n 1 || true)
+  else
+    found=$(find "$root" -type f \
+      -not -path "$root/.git/*" \
+      -not -path "$root/.artifacts/*" \
+      -not -path "$root/Scripts/check-public-boundaries" \
+      -exec grep -IlF -- "$forbidden" {} + 2>/dev/null | head -n 1 || true)
+  fi
+  if [[ -n "$found" ]]; then
+    print -u2 "公开边界检查失败：发现 $forbidden"
+    exit 1
+  fi
+done
+
+if find "$root" -type f \( -name '*.p8' -o -name '*.p12' -o -name '*.mobileprovision' -o -name '*.pem' -o -name '*.key' \) -not -path '*/.git/*' | grep -q .; then
+  print -u2 "公开边界检查失败：发现凭证或私钥文件"
+  exit 1
+fi
+
+print "✓ Mac 仓库公开边界检查通过"

@@ -1,0 +1,7 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+swift test --package-path "$root" --enable-code-coverage
+print "✓ TokenWatch Mac 共享包测试通过"

@@ -1,0 +1,12 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+"$root/Scripts/verify-environment"
+"$root/Scripts/check-localizations"
+"$root/Scripts/check-public-boundaries"
+"$root/Scripts/test"
+"$root/Scripts/build"
+"$root/Scripts/build-mac-local-release"
+print "✓ TokenWatch Mac 全部自动化验收通过"

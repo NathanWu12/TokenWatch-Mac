@@ -1,0 +1,38 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+
+ruby -rjson -e '
+  allowed = ["TokenWatch", "TokenWatch Mac Hub", "tokens"]
+  ARGV.each do |path|
+    catalog = JSON.parse(File.read(path))
+    abort "#{path}: sourceLanguage 必须是 zh-Hans" unless catalog["sourceLanguage"] == "zh-Hans"
+    catalog.fetch("strings").each do |key, value|
+      next if allowed.include?(key)
+      translation = value.dig("localizations", "en", "stringUnit")
+      unless translation && translation["state"] == "translated" && !translation["value"].to_s.empty?
+        abort "#{path}: 缺少英文翻译：#{key}"
+      end
+    end
+  end
+' "$root"/Apps/MacHub/Localizable.xcstrings
+
+ruby -rjson -e '
+  ARGV.each do |directory|
+    catalog_path = File.join(directory, "Localizable.xcstrings")
+    catalog = JSON.parse(File.read(catalog_path)).fetch("strings")
+    source_keys = Dir.glob(File.join(directory, "*.swift")).flat_map do |path|
+      source = File.read(path)
+      explicit = source.scan(/String\(localized: "((?:\\.|[^"\\])*)"/).flatten
+      swiftui = source.scan(/\b(?:Text|Button|Section|GroupBox)\("((?:\\.|[^"\\])*)"/)
+        .flatten.reject { |key| key.include?("\\(") }
+      explicit + swiftui
+    end.uniq
+    missing = source_keys.reject { |key| catalog.key?(key) }
+    abort "#{catalog_path}: 源代码字符串未进入 String Catalog：#{missing.join(", ")}" unless missing.empty?
+  end
+' "$root"/Apps/MacHub
+
+print "✓ String Catalog JSON 与中英文条目检查通过"

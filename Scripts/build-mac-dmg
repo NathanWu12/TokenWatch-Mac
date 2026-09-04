@@ -1,0 +1,39 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+"$root/Scripts/build-mac-local-release"
+
+release_dir="$root/.artifacts/MacLocalRelease"
+app="$release_dir/DerivedData/Build/Products/Release/TokenWatch Mac.app"
+[[ -d "$app" ]] || { print -u2 "未找到 Release App：$app"; exit 1; }
+
+version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
+dmg="$release_dir/TokenWatch-Mac-v${version}-preview.dmg"
+checksum="$dmg.sha256"
+staging="$release_dir/dmg-root"
+
+rm -rf "$staging"
+mkdir -p "$staging"
+ditto "$app" "$staging/TokenWatch Mac.app"
+ln -s /Applications "$staging/Applications"
+
+rm -f "$dmg" "$checksum"
+hdiutil create \
+  -volname "TokenWatch Mac" \
+  -srcfolder "$staging" \
+  -ov \
+  -format UDZO \
+  "$dmg" >/dev/null
+
+(
+  cd "$release_dir"
+  shasum -a 256 "${dmg:t}" >"${checksum:t}"
+)
+rm -rf "$staging"
+
+print "✓ TokenWatch Mac Preview DMG 构建完成"
+print "  DMG：$dmg"
+print "  SHA-256：$checksum"
+print "△ 当前为 ad-hoc 签名、未 Apple notarize 的 Universal Preview；local-only 构建不包含 CloudKit entitlement。"

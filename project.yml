@@ -1,0 +1,69 @@
+name: TokenWatchMac
+
+configs:
+  Debug: debug
+  Release: release
+
+configFiles:
+  Debug: Configs/Production.xcconfig
+  Release: Configs/Production.xcconfig
+
+options:
+  developmentLanguage: zh-Hans
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "26.0"
+
+packages:
+  TokenWatchCore:
+    path: .
+
+targets:
+  MacHub:
+    type: application
+    platform: macOS
+    sources:
+      - Apps/MacHub
+      - Apps/Shared
+    dependencies:
+      - package: TokenWatchCore
+        product: Domain
+      - package: TokenWatchCore
+        product: MacProviderAdapters
+      - package: TokenWatchCore
+        product: SyncProtocol
+      - package: TokenWatchCore
+        product: SyncSecurity
+      - package: TokenWatchCore
+        product: RemoteSync
+      - package: TokenWatchCore
+        product: LocalTransport
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nathanwu.TokenWatch.MacHub
+        PRODUCT_NAME: TokenWatch Mac
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: TokenWatch Mac
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: TokenWatch 使用本地网络与已配对的 iPhone 安全同步用量。
+        INFOPLIST_KEY_NSBonjourServices:
+          - _tokenwatch-p0._tcp
+    entitlements:
+      path: Apps/MacHub/MacHub.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.nathanwu.TokenWatch
+        com.apple.developer.icloud-services:
+          - CloudKit
+
+schemes:
+  MacHub:
+    build:
+      targets:
+        MacHub: all
+    run:
+      config: Debug
+    archive:
+      config: Release

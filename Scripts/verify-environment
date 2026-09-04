@@ -1,0 +1,13 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+developer_dir="$(xcode-select -p 2>/dev/null || true)"
+[[ "$developer_dir" == *"/Xcode.app/Contents/Developer"* ]] || {
+  print -u2 "需要启用完整 Xcode"
+  exit 1
+}
+command -v xcodebuild >/dev/null
+xcrun --sdk macosx --show-sdk-path >/dev/null
+command -v ruby >/dev/null
+print "✓ TokenWatch Mac 验证环境通过"

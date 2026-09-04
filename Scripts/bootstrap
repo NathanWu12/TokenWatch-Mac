@@ -1,0 +1,23 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+tool_root="$root/.build-tools"
+xcodegen_root="$tool_root/XcodeGen"
+xcodegen_version="2.45.4"
+
+"$root/Scripts/verify-environment"
+
+mkdir -p "$tool_root"
+if [[ ! -x "$xcodegen_root/.build/release/xcodegen" ]]; then
+  if [[ ! -d "$xcodegen_root/.git" ]]; then
+    git clone --depth 1 --branch "$xcodegen_version" \
+      https://github.com/yonaskolb/XcodeGen.git "$xcodegen_root"
+  fi
+  swift build --package-path "$xcodegen_root" -c release --product xcodegen
+fi
+
+"$xcodegen_root/.build/release/xcodegen" generate --spec "$root/project.yml"
+print "✓ 项目与本地构建工具已准备好"
+print "  TokenWatch 使用自己的原生采集器，不安装或修改任何第三方 AI 工具。"

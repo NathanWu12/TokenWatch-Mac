@@ -1,0 +1,50 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+mode="${1:---install}"
+artifact_dir="${TOKENWATCH_ARTIFACTS:-$root/.artifacts}"
+derived_data="${TOKENWATCH_MAC_APP_DERIVED_DATA:-$artifact_dir/InstalledMacDerivedData}"
+destination="${TOKENWATCH_MAC_APP_DESTINATION:-/Applications/TokenWatch Mac.app}"
+
+case "$mode" in
+  --install|--open)
+    ;;
+  *)
+    print -u2 "用法: Scripts/install-mac-app [--install|--open]"
+    exit 64
+    ;;
+esac
+
+"$root/Scripts/verify-environment"
+
+xcodebuild \
+  -project "$root/TokenWatchMac.xcodeproj" \
+  -scheme MacHub \
+  -configuration Debug \
+  -destination "platform=macOS" \
+  -derivedDataPath "$derived_data" \
+  CODE_SIGN_ENTITLEMENTS="$root/Apps/MacHub/MacHubLocalOnly.entitlements" \
+  CODE_SIGN_IDENTITY=- \
+  DEVELOPMENT_TEAM= \
+  build
+
+source_app="$derived_data/Build/Products/Debug/TokenWatch Mac.app"
+[[ -d "$source_app" ]] || {
+  print -u2 "找不到 Mac App 构建产物：$source_app"
+  exit 1
+}
+
+codesign --verify --deep --strict "$source_app"
+mkdir -p "${destination:h}"
+ditto "$source_app" "$destination"
+codesign --verify --deep --strict "$destination"
+
+print "✓ TokenWatch Mac 开发应用已安装"
+print "  $destination"
+print "△ 这是本机 Debug / local-only 构建，不是发布签名版本"
+
+if [[ "$mode" == "--open" ]]; then
+  open "$destination"
+fi

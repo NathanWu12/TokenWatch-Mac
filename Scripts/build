@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+derived_data="${TOKENWATCH_DERIVED_DATA:-$root/.artifacts/DerivedData}"
+mkdir -p "$derived_data"
+
+xcodebuild \
+  -project "$root/TokenWatchMac.xcodeproj" \
+  -scheme MacHub \
+  -configuration Debug \
+  -destination "platform=macOS" \
+  -derivedDataPath "$derived_data" \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+
+print "✓ TokenWatch Mac Debug 构建通过"
