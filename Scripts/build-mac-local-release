@@ -29,6 +29,7 @@ xcodebuild \
   -configuration Release \
   -destination "generic/platform=macOS" \
   -derivedDataPath "$derived_data" \
+  -disableAutomaticPackageResolution \
   CODE_SIGN_ENTITLEMENTS="$root/Apps/MacHub/MacHubLocalOnly.entitlements" \
   CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
   CODE_SIGN_IDENTITY=- \
@@ -68,6 +69,14 @@ if /usr/libexec/PlistBuddy -c "Print :com.apple.security.files.user-selected.rea
   exit 1
 fi
 
+library_validation_disabled="$(/usr/libexec/PlistBuddy \
+  -c "Print :com.apple.security.cs.disable-library-validation" \
+  "$entitlements_file" 2>/dev/null || true)"
+if [[ "$library_validation_disabled" != "true" ]]; then
+  print -u2 "Ad-hoc Preview 必须关闭 Library Validation 才能加载 Sparkle framework"
+  exit 1
+fi
+
 signature_details="$(codesign -dv --verbose=4 "$app" 2>&1)"
 if [[ "$signature_details" != *"runtime"* ]]; then
   print -u2 "Mac Release 构建必须启用 Hardened Runtime"
@@ -80,6 +89,28 @@ architectures="$(lipo -archs "$executable")"
   print -u2 "构建产物不是 Universal binary：$architectures"
   exit 1
 }
+
+# codesign --verify can pass even when dyld's hardened-runtime library validation
+# rejects an embedded framework. Launch the exact Release executable before packaging
+# so a Team-ID / @rpath / framework-load regression fails the release gate.
+smoke_log="$(mktemp)"
+"$executable" \
+  -LaunchAtLoginEnabled NO \
+  -DeviceSyncEnabled NO \
+  -SUEnableAutomaticChecks NO \
+  >"$smoke_log" 2>&1 &
+smoke_pid=$!
+sleep 2
+if ! kill -0 "$smoke_pid" 2>/dev/null; then
+  print -u2 "Release App 启动 smoke test 失败"
+  cat "$smoke_log" >&2 || true
+  wait "$smoke_pid" 2>/dev/null || true
+  rm -f "$smoke_log"
+  exit 1
+fi
+kill "$smoke_pid" 2>/dev/null || true
+wait "$smoke_pid" 2>/dev/null || true
+rm -f "$smoke_log"
 
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
 build_number="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$app/Contents/Info.plist")"

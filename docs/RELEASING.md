@@ -36,4 +36,4 @@ The first time `generate_appcast` uses the TokenWatch signing key, macOS may ask
 
 ## Current preview limitation
 
-The repository's local release pipeline still uses ad-hoc signing and is not Apple-notarized. Sparkle update signing protects update integrity, but it does not replace Developer ID signing/notarization. A public stable release should move the existing build pipeline to Developer ID + notarization separately.
+The repository's local release pipeline still uses ad-hoc signing and is not Apple-notarized. Because an ad-hoc signed hardened-runtime host has no Developer Team identity to match Sparkle's dynamic framework at load time, the local-only Preview entitlement disables Library Validation. The release gate launches the exact built app before packaging so dyld/framework-signature regressions fail before upload. Sparkle update signing still protects update integrity, but it does not replace Developer ID signing/notarization. A public stable release should use Developer ID + notarization and must not carry the Preview-only Library Validation exception.
