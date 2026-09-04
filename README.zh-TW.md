@@ -40,6 +40,45 @@ TokenWatch Mac 針對選單列長期執行進行低開銷設計：
 
 以上資料衡量採集/匯出路徑，並不等同於 App 常駐 RSS；實際表現會隨記錄規模、儲存裝置與硬體而變化。
 
+## 小體積、低佔用是架構結果
+
+TokenWatch Mac 使用 **原生 Swift / SwiftUI / AppKit** 開發，直接重用 macOS 內建系統 Framework。目前 Universal Release **沒有內嵌 Frameworks 目錄，也不綁定 Chromium、Electron 或 Node.js runtime**。
+
+2026-09-05 對目前公開 Release 的實測：
+
+| 指標 | 實測值 |
+| --- | ---: |
+| Universal DMG（arm64 + x86_64） | **5.3 MB** |
+| 安裝後的 `.app` | **約 11 MB** |
+| 主執行檔 | **約 8.0 MB** |
+| 內嵌 runtime Framework | **0** |
+| 閒置時常駐子程序 | **0** |
+| 執行約 1.5 小時後的閒置 `top` MEM | **約 45 MB** |
+| 閒置 `ps` RSS | **約 121 MiB** |
+| 連續 6 次、每次 1 秒的閒置取樣 | **CPU 0.0% / POWER 0.0** |
+
+同時列出 `top` MEM 與 `ps` RSS，是因為 macOS 不同工具的記憶體計算方式不同；RSS 會包含共享映射，不應直接視為「私人獨佔記憶體」。`POWER 0.0` 是 macOS `top` 的相對程序功耗指標，**不是瓦特數**。較長取樣會看到短暫更新峰值，完成後會立即回到閒置。
+
+### 放到目前 Mac 硬體價格中是什麼量級
+
+截至 **2026-09-05**，Apple 目前 M6 Mac mini 設定器中，相鄰 **8 GB 統一記憶體級距差價為 $200**，**256 GB → 512 GB SSD 差價為 $200**；M6 Mac mini 美國起價為 **$899**。
+
+若只把官方升級價當作方便理解的**容量等價換算**：
+
+- 約 45 MB 閒置 `top` 記憶體僅約為 24 GB 的 **0.19%**；依 $25/GB 的記憶體級距價格換算，約 **$1.1** 的容量。
+- 約 11 MB 安裝體積僅佔 256 GB 的 **約 0.004%**；依 Apple SSD 級距價格換算約 **$0.01**。
+- 5.3 MB 下載包僅佔 256 GB 的 **約 0.002%**，同口徑換算 **不到半美分**。
+
+這**不是成本會計結論**；Apple 升級價格並不等於 RAM/SSD 製造成本，只是用熟悉的 Mac 價格幫助理解量級。
+
+### 為什麼值得強調原生 Swift
+
+原生方案可以直接使用 macOS 已有的系統 Framework，不需要把瀏覽器 runtime 一起打包。作為量級參考，Electron **v44.0.0** 的 macOS arm64 runtime ZIP 本身就有 **129,743,965 bytes（約 123.7 MiB）**，尚未包含具體 App 自己的程式與資源。TokenWatch 的 **5.3 MB Universal DMG** 同時包含 Apple Silicon 與 Intel 架構，仍比這個 Electron 壓縮 runtime 本身小 **約 23 倍**。
+
+Electron 官方也說明其繼承 Chromium 的多程序模型，包括 main process 與 renderer process。TokenWatch 目前閒置時沒有常駐子程序。這裡比較的是**框架 runtime 基線，不是在聲稱所有非 Swift App 或所有同類專案都很重**；這個領域也有許多優秀的原生 Swift 專案。
+
+資料來源：[Apple M6 Mac mini 發布資訊](https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/) · [Apple M6 Mac mini 設定器](https://www.apple.com/shop/buy-mac/mac-mini/m6-chip-12-core-cpu-12-core-gpu-24gb-memory-256gb-storage) · [Electron v44.0.0 Release](https://github.com/electron/electron/releases/tag/v44.0.0) · [Electron process model](https://www.electronjs.org/docs/latest/tutorial/process-model)
+
 ## 介面截圖
 
 <p align="center">

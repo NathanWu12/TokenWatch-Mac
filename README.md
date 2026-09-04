@@ -1,7 +1,7 @@
 <div align="center">
   <img src="Apps/MacHub/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="TokenWatch Mac icon">
   <h1>TokenWatch Mac</h1>
-  <p><strong>A lightweight, always-on macOS hub for local AI usage and quota tracking.</strong></p>
+  <p><strong>Native Swift. ~5.3 MB Universal DMG. Near-zero idle CPU. Built to stay open.</strong></p>
   <p>Codex · Claude Code · Antigravity · OpenCode</p>
 </div>
 
@@ -47,6 +47,45 @@ Reference benchmark using approximately **810 MB of Codex history**:
 | Immediate no-change collection | full rescan | **0.82 s / ~34 MiB peak** |
 
 These figures measure the collection/export path rather than steady-state application RSS. Results vary with log volume, storage and hardware.
+
+## Small by construction
+
+TokenWatch Mac is a **native Swift / SwiftUI / AppKit** application. The current Universal build uses macOS system frameworks directly and ships with **no embedded Frameworks directory, no Chromium, no Electron and no Node.js runtime**.
+
+Measured from the current public Release build on 2026-09-05:
+
+| Metric | Measured value |
+| --- | ---: |
+| Universal DMG (arm64 + x86_64) | **5.3 MB** |
+| Installed `.app` bundle | **~11 MB** |
+| Main executable | **~8.0 MB** |
+| Embedded runtime frameworks | **0** |
+| Persistent child processes while idle | **0** |
+| Idle `top` MEM after ~1.5 h runtime | **~45 MB** |
+| Idle `ps` RSS | **~121 MiB** |
+| 6 consecutive 1 s idle samples | **0.0% CPU / 0.0 POWER** |
+
+`top` MEM and `ps` RSS are intentionally both shown because macOS memory tools use different accounting. RSS includes shared mappings and should not be read as "private memory." `POWER 0.0` is macOS `top`'s relative process power metric, **not a watt measurement**. Longer sampling also catches short refresh bursts; the process returns to idle immediately afterward.
+
+### What that means on a current Mac
+
+As of **2026-09-05**, Apple's current M6 Mac mini configurator prices an adjacent **8 GB unified-memory step at $200** and the **256 GB → 512 GB SSD step at $200**. The M6 Mac mini itself starts at **$899** in the U.S.
+
+Using those upgrade steps only as a playful **capacity-equivalent illustration**:
+
+- ~45 MB idle `top` memory is about **0.19% of 24 GB**, or roughly **$1.1** of capacity at a $25/GB memory-upgrade rate.
+- The ~11 MB installed app is about **0.004% of 256 GB**, or roughly **$0.01** of capacity at that SSD-upgrade rate.
+- The 5.3 MB download is about **0.002% of 256 GB**, equivalent to **less than half a cent** at the same storage rate.
+
+This is **not an accounting claim**: Apple upgrade prices are not the intrinsic manufacturing cost of RAM or SSD space. It is simply a way to make the scale intuitive.
+
+### Why native Swift matters
+
+A native implementation lets TokenWatch reuse the frameworks already shipped with macOS instead of bundling a browser runtime. For scale, Electron **v44.0.0** ships a macOS arm64 runtime ZIP of **129,743,965 bytes (~123.7 MiB)** before an application's own code and assets. TokenWatch's **5.3 MB Universal DMG** contains both Apple Silicon and Intel binaries and is still about **23× smaller than that compressed Electron runtime archive alone**.
+
+Electron also documents a Chromium-derived multi-process model with a main process and renderer processes. TokenWatch currently has no persistent child process while idle. This is a **framework-baseline comparison, not a claim that every non-Swift app or every competing tracker is heavy**; several good native macOS trackers are also built with Swift.
+
+Sources: [Apple M6 Mac mini announcement](https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/) · [Apple M6 Mac mini configurator](https://www.apple.com/shop/buy-mac/mac-mini/m6-chip-12-core-cpu-12-core-gpu-24gb-memory-256gb-storage) · [Electron v44.0.0 release](https://github.com/electron/electron/releases/tag/v44.0.0) · [Electron process model](https://www.electronjs.org/docs/latest/tutorial/process-model)
 
 ## Screenshots
 
