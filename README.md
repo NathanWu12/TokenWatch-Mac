@@ -8,6 +8,7 @@
 <p align="center">
   <a href="README.md">English</a> ·
   <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.zh-TW.md">繁體中文</a> ·
   <a href="README.ja.md">日本語</a> ·
   <a href="README.ko.md">한국어</a> ·
   <a href="README.fr.md">Français</a> ·
@@ -16,28 +17,28 @@
 
 ## What it does
 
-TokenWatch Mac is a native menu-bar hub that reads the standard local data stores of supported AI clients in **read-only** mode, normalizes token usage and quota information, and presents it in one compact dashboard.
+TokenWatch Mac is a native menu-bar application that reads the standard local data stores of supported AI clients in **read-only** mode, normalizes token usage and quota information, and presents it in a compact dashboard.
 
 - Automatically discovers supported local AI clients.
-- Tracks today / 7-day / 30-day / recorded-all-time token usage.
+- Tracks today, 7-day, 30-day and recorded-all-time token usage.
 - Shows provider and model breakdowns, project trends and quota windows.
-- Supports authenticated LAN sync and end-to-end encrypted CloudKit mailbox sync for companion clients when the full entitlement-enabled build is used.
-- Never stores prompts, responses, tool arguments, complete project paths or provider credentials in TokenWatch snapshots.
+- Supports authenticated LAN sync and end-to-end encrypted CloudKit mailbox sync for companion clients when the entitlement-enabled build is used.
+- Does not store prompts, responses, tool arguments, complete project paths or provider credentials in TokenWatch snapshots.
 
-## Built to stay open
+## Designed for continuous operation
 
-TokenWatch Mac is designed for **24/7 residency** rather than occasional batch reporting.
+TokenWatch Mac is optimized for long-running menu-bar use with low collection overhead.
 
-- **Incremental Codex indexing** reads only newly appended bytes after the first index build.
-- **FSEvents-driven refresh** reacts to changes in whitelisted provider directories; periodic refresh remains only as a safety net.
-- **Bounded concurrency** prevents multiple large collectors from inflating memory at the same time.
-- **Semantic snapshot deduplication** avoids unnecessary disk, LAN and CloudKit writes when nothing meaningful changed.
-- **Latest-wins remote sync** prevents old snapshots from forming an upload backlog.
-- Native Swift / SwiftUI implementation, with no embedded browser runtime or always-on local web server.
+- **Incremental Codex indexing** reads only newly appended bytes after the initial index is built.
+- **FSEvents-driven refresh** reacts to changes in approved provider directories, with periodic refresh retained as a fallback.
+- **Bounded concurrency** limits simultaneous large collectors.
+- **Semantic snapshot deduplication** avoids unnecessary disk, LAN and CloudKit writes when data has not meaningfully changed.
+- **Latest-wins remote sync** prevents obsolete snapshots from building an upload backlog.
+- Native Swift / SwiftUI implementation with no embedded browser runtime or always-on local web server.
 
-### Measured collection performance
+### Reference collection performance
 
-Measured on the development Mac on **2026-09-04** with approximately **810 MB of Codex history**:
+Reference benchmark using approximately **810 MB of Codex history**:
 
 | Scenario | Before optimization | Current |
 | --- | ---: | ---: |
@@ -45,17 +46,25 @@ Measured on the development Mac on **2026-09-04** with approximately **810 MB of
 | New Codex data with existing index | full rescan | **0.86 s / ~34 MiB peak** |
 | Immediate no-change collection | full rescan | **0.82 s / ~34 MiB peak** |
 
-These numbers measure the collection/export path, not steady-state application RSS. Actual results vary with log volume, storage and hardware.
+These figures measure the collection/export path rather than steady-state application RSS. Results vary with log volume, storage and hardware.
 
-## Interface
+## Screenshots
 
-A real dashboard screenshot will be added before the stable notarized release. Automated publication intentionally does **not** fabricate a UI screenshot when macOS Screen Recording permission is unavailable.
+<p align="center">
+  <img src="docs/images/dashboard.webp" width="900" alt="TokenWatch Mac dashboard">
+</p>
+<p align="center"><sub>Dashboard with usage summaries, project breakdown, model distribution and usage trends.</sub></p>
 
-## Privacy first
+<p align="center">
+  <img src="docs/images/menu-bar.webp" width="560" alt="TokenWatch Mac menu-bar popover">
+</p>
+<p align="center"><sub>Menu-bar popover with rolling usage totals and quota windows.</sub></p>
+
+## Privacy
 
 - Only the Mac hub reads local AI-client logs.
 - Provider credentials are not written to TokenWatch caches or cross-device snapshots.
-- Codex, Claude Code and OpenCode use local token counters. Antigravity is explicitly labeled as an estimate because its local transcript data does not expose authoritative token counters.
+- Codex, Claude Code and OpenCode use local token counters. Antigravity is labeled as an estimate because its local transcript data does not expose authoritative token counters.
 - CloudKit stores only the latest end-to-end encrypted envelope in the user's private database.
 - File discovery is restricted to known provider locations; TokenWatch does not recursively crawl the user's home directory.
 
@@ -63,18 +72,18 @@ A real dashboard screenshot will be added before the stable notarized release. A
 
 Download the latest DMG from **GitHub Releases**.
 
-> **Preview distribution:** the current downloadable DMG is an ad-hoc-signed, non-notarized Universal build because this project machine does not yet have a Developer ID Application certificate. macOS may display a Gatekeeper warning. The preview DMG also uses the local-only entitlement set, so CloudKit remote sync is disabled in that binary. A stable public release should be Developer ID signed and notarized.
+Current DMG builds are Universal, ad-hoc signed and not notarized; macOS may display a Gatekeeper warning. CloudKit remote sync is available only in builds with the required entitlements.
 
 ## Build
 
-Requirements: macOS 14+, Xcode, Swift 6.1 toolchain.
+Requirements: macOS 14+, Xcode and the Swift 6.1 toolchain.
 
 ```sh
 Scripts/bootstrap
 Scripts/verify
 ```
 
-Build a local Universal preview ZIP:
+Build a local Universal ZIP:
 
 ```sh
 Scripts/build-mac-local-release
@@ -90,4 +99,4 @@ Artifacts are written under `.artifacts/`.
 
 ## Source availability
 
-The source is publicly visible for transparency and review. No open-source license is granted unless a license file explicitly says otherwise. All rights are reserved.
+The source is publicly visible for transparency and review. No open-source license is granted unless a license file explicitly states otherwise. All rights are reserved.
