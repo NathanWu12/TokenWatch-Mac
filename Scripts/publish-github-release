@@ -1,0 +1,160 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+root="${0:A:h:h}"
+repo="NathanWu12/TokenWatch-Mac"
+artifact_root="${TOKENWATCH_ARTIFACTS:-$root/.artifacts}"
+release_dir="$artifact_root/MacLocalRelease"
+prerelease=false
+release_tag=""
+notes_file=""
+
+usage() {
+  cat <<'USAGE'
+Usage: Scripts/publish-github-release --tag <git-tag> [--notes <file>] [--prerelease]
+
+Creates a GitHub Release as a draft, uploads every update/download asset, verifies
+that the Sparkle appcast asset exists, and only then publishes the release.
+USAGE
+}
+
+while (( $# > 0 )); do
+  case "$1" in
+    --tag)
+      [[ $# -ge 2 ]] || { print -u2 "--tag 需要值"; exit 2; }
+      release_tag="$2"
+      shift 2
+      ;;
+    --notes)
+      [[ $# -ge 2 ]] || { print -u2 "--notes 需要文件路径"; exit 2; }
+      notes_file="$2"
+      shift 2
+      ;;
+    --prerelease)
+      prerelease=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      print -u2 "未知参数：$1"
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+[[ -n "$release_tag" ]] || { print -u2 "必须提供 --tag"; exit 2; }
+[[ "$release_tag" != "update-feed" ]] || { print -u2 "update-feed 是保留的更新源 tag"; exit 2; }
+[[ -z "$notes_file" || -f "$notes_file" ]] || { print -u2 "Release notes 不存在：$notes_file"; exit 1; }
+command -v gh >/dev/null 2>&1 || { print -u2 "需要 GitHub CLI (gh)"; exit 1; }
+gh auth status >/dev/null
+
+cd "$root"
+[[ "$(git branch --show-current)" == "main" ]] || { print -u2 "只允许从 main 发布"; exit 1; }
+git diff --quiet && git diff --cached --quiet || { print -u2 "工作区必须保持干净"; exit 1; }
+git fetch origin main --tags
+[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || { print -u2 "main 必须与 origin/main 完全同步"; exit 1; }
+
+if git rev-parse -q --verify "refs/tags/${release_tag}^{commit}" >/dev/null; then
+  tag_commit="$(git rev-parse "refs/tags/${release_tag}^{commit}")"
+  [[ "$tag_commit" == "$(git rev-parse HEAD)" ]] || {
+    print -u2 "已有 tag ${release_tag} 未指向当前 main HEAD"
+    exit 1
+  }
+fi
+
+if gh release view "$release_tag" --repo "$repo" >/dev/null 2>&1; then
+  print -u2 "Release 已存在：$release_tag"
+  exit 1
+fi
+
+# Build download artifacts first, then sign the exact ZIP that will be uploaded.
+"$root/Scripts/build-mac-dmg"
+"$root/Scripts/build-update-feed" --tag "$release_tag" --skip-build
+
+app="$release_dir/DerivedData/Build/Products/Release/TokenWatch Mac.app"
+version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
+zip="$release_dir/TokenWatch-Mac-v${version}-local-preview.zip"
+dmg="$release_dir/TokenWatch-Mac-v${version}-preview.dmg"
+appcast="$release_dir/appcast.xml"
+assets=("$zip" "$zip.sha256" "$dmg" "$dmg.sha256" "$appcast")
+for asset in "${assets[@]}"; do
+  [[ -s "$asset" ]] || { print -u2 "发布资产缺失：$asset"; exit 1; }
+done
+
+create_args=(release create "$release_tag" --repo "$repo" --draft --latest=false --target "$(git rev-parse HEAD)" --title "TokenWatch Mac ${release_tag}")
+if [[ -n "$notes_file" ]]; then
+  create_args+=(--notes-file "$notes_file")
+else
+  create_args+=(--generate-notes)
+fi
+if [[ "$prerelease" == true ]]; then
+  create_args+=(--prerelease)
+fi
+
+gh "${create_args[@]}"
+gh release upload "$release_tag" "${assets[@]}" --repo "$repo"
+
+# Do not expose a release to update clients until every asset has uploaded.
+remote_assets="$(gh release view "$release_tag" --repo "$repo" --json assets --jq '.assets[].name')"
+for asset in "${assets[@]}"; do
+  grep -Fxq "${asset:t}" <<< "$remote_assets" || {
+    print -u2 "远端 Release 缺少资产：${asset:t}；Release 保持 draft"
+    exit 1
+  }
+done
+
+if [[ "$prerelease" == true ]]; then
+  gh release edit "$release_tag" --repo "$repo" --draft=false --prerelease
+else
+  gh release edit "$release_tag" --repo "$repo" --draft=false --latest
+fi
+
+# The app points at a fixed direct asset URL so prereleases can participate in updates.
+# Switch this feed only after the target release is public. Keep a local copy of the
+# previous feed and make a best-effort restore if replacement or verification fails.
+feed_tag="update-feed"
+feed_workdir="$(mktemp -d "$release_dir/update-feed.XXXXXX")"
+cleanup_feed_workdir() { rm -rf "$feed_workdir"; }
+trap cleanup_feed_workdir EXIT
+mkdir -p "$feed_workdir/previous" "$feed_workdir/remote"
+had_previous_feed=false
+
+if gh release view "$feed_tag" --repo "$repo" >/dev/null 2>&1; then
+  if gh release download "$feed_tag" --repo "$repo" --pattern appcast.xml --dir "$feed_workdir/previous" >/dev/null 2>&1; then
+    had_previous_feed=true
+  fi
+else
+  gh release create "$feed_tag" \
+    --repo "$repo" \
+    --target "$(git rev-parse HEAD)" \
+    --prerelease \
+    --title "TokenWatch Update Feed" \
+    --notes "Machine-readable Sparkle update feed. Download app builds from versioned releases."
+fi
+
+restore_previous_feed() {
+  if [[ "$had_previous_feed" == true && -s "$feed_workdir/previous/appcast.xml" ]]; then
+    gh release upload "$feed_tag" "$feed_workdir/previous/appcast.xml" --repo "$repo" --clobber >/dev/null 2>&1 || true
+  fi
+}
+
+if ! gh release upload "$feed_tag" "$appcast" --repo "$repo" --clobber; then
+  restore_previous_feed
+  print -u2 "固定更新源上传失败；已尝试恢复上一版 appcast"
+  exit 1
+fi
+
+if ! gh release download "$feed_tag" --repo "$repo" --pattern appcast.xml --dir "$feed_workdir/remote" >/dev/null 2>&1 \
+  || ! cmp -s "$appcast" "$feed_workdir/remote/appcast.xml"; then
+  restore_previous_feed
+  print -u2 "固定更新源远端校验失败；已尝试恢复上一版 appcast"
+  exit 1
+fi
+
+print "✓ GitHub Release 已发布：$release_tag"
+print "  版本资产先发布并核验，再更新并回读校验 Sparkle update-feed/appcast.xml"

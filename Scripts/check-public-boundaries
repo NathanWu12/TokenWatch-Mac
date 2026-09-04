@@ -32,7 +32,7 @@ for forbidden in \
   fi
 done
 
-if find "$root" -type f \( -name '*.p8' -o -name '*.p12' -o -name '*.mobileprovision' -o -name '*.pem' -o -name '*.key' \) -not -path '*/.git/*' | grep -q .; then
+if find "$root" -type f \( -name '*.p8' -o -name '*.p12' -o -name '*.mobileprovision' -o -name '*.pem' -o -name '*.key' \) -not -path '*/.git/*' -not -path '*/.artifacts/*' | grep -q .; then
   print -u2 "公开边界检查失败：发现凭证或私钥文件"
   exit 1
 fi

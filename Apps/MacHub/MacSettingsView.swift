@@ -1,23 +1,25 @@
 import Domain
 import MacProviderAdapters
 import Observation
-import ServiceManagement
 import SwiftUI
 
 struct MacSettingsView: View {
     @Bindable var store: MacHubStore
     let embedded: Bool
     @State private var launchAtLogin = LaunchAtLoginController()
+    @ObservedObject var updateController: MacUpdateController
     @Binding var languageIdentifier: String
     @Environment(\.locale) private var locale
 
     init(
         store: MacHubStore,
         embedded: Bool = false,
+        updateController: MacUpdateController,
         languageIdentifier: Binding<String>
     ) {
         self.store = store
         self.embedded = embedded
+        self.updateController = updateController
         _languageIdentifier = languageIdentifier
     }
 
@@ -137,42 +139,100 @@ struct MacSettingsView: View {
                 }
             }
 
-            Section("iPhone 与 Apple Watch") {
-                LabeledContent("配对码") {
-                    Text(store.peerPublisher.pairingCode)
-                        .font(.title2.monospacedDigit().bold())
-                        .privacySensitive()
-                }
-                LabeledContent("连接状态") {
-                    Text(localizedAppString(store.peerPublisher.stateText, locale: locale))
-                }
-                LabeledContent("远程同步") {
-                    Text(localizedAppString(store.peerPublisher.remoteStatusText, locale: locale))
-                }
-                LabeledContent("Mac 指纹") {
-                    Text(store.peerPublisher.publicKeyFingerprint)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
-                }
+            Section("更新") {
+                Toggle(
+                    "自动检测更新",
+                    isOn: Binding(
+                        get: { updateController.automaticallyChecksForUpdates },
+                        set: { updateController.setAutomaticallyChecksForUpdates($0) }
+                    )
+                )
+
+                Text("打开 TokenWatch 时检查更新，并每小时在后台检测。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle(
+                    "自动更新",
+                    isOn: Binding(
+                        get: { updateController.automaticallyDownloadsUpdates },
+                        set: { updateController.setAutomaticallyDownloadsUpdates($0) }
+                    )
+                )
+                .disabled(!updateController.allowsAutomaticUpdates)
+
+                Text("启用后，更新会在后台自动下载，并由系统在合适时机完成安装。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 HStack {
-                    Button("发送当前数据") {
-                        store.publishCurrentSnapshot()
+                    Button("检查更新") {
+                        updateController.checkForUpdates()
                     }
-                    Button("更新配对码", role: .destructive) {
-                        store.peerPublisher.rotatePairingCode()
+                    .disabled(!updateController.canCheckForUpdates)
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Text("当前版本")
+                        Text(verbatim: updateController.currentVersion)
                     }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
-                if !store.peerPublisher.pairedDevices.isEmpty {
-                    ForEach(store.peerPublisher.pairedDevices, id: \.deviceId) { device in
-                        HStack {
-                            Label(device.displayName, systemImage: "iphone")
-                            Spacer()
-                            Button("撤销", role: .destructive) {
-                                store.peerPublisher.revoke(deviceId: device.deviceId)
+            }
+
+            Section("iPhone 与 Apple Watch") {
+                Toggle(
+                    "向 iPhone 与 Apple Watch 传输数据",
+                    isOn: Binding(
+                        get: { store.deviceSyncEnabled },
+                        set: { store.setDeviceSyncEnabled($0) }
+                    )
+                )
+
+                Text("默认关闭。关闭时不会启动 Bonjour 广播，也不会向 iCloud 远程同步。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Group {
+                    LabeledContent("配对码") {
+                        Text(store.peerPublisher.pairingCode)
+                            .font(.title2.monospacedDigit().bold())
+                            .privacySensitive()
+                    }
+                    LabeledContent("连接状态") {
+                        Text(localizedAppString(store.peerPublisher.stateText, locale: locale))
+                    }
+                    LabeledContent("远程同步") {
+                        Text(localizedAppString(store.peerPublisher.remoteStatusText, locale: locale))
+                    }
+                    LabeledContent("Mac 指纹") {
+                        Text(store.peerPublisher.publicKeyFingerprint)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    }
+                    HStack {
+                        Button("发送当前数据") {
+                            store.publishCurrentSnapshot()
+                        }
+                        Button("更新配对码", role: .destructive) {
+                            store.peerPublisher.rotatePairingCode()
+                        }
+                    }
+                    if !store.peerPublisher.pairedDevices.isEmpty {
+                        ForEach(store.peerPublisher.pairedDevices, id: \.deviceId) { device in
+                            HStack {
+                                Label(device.displayName, systemImage: "iphone")
+                                Spacer()
+                                Button("撤销", role: .destructive) {
+                                    store.peerPublisher.revoke(deviceId: device.deviceId)
+                                }
                             }
                         }
                     }
                 }
+                .disabled(!store.deviceSyncEnabled)
             }
         }
         .formStyle(.grouped)
@@ -198,48 +258,4 @@ struct MacSettingsView: View {
     }
 
 
-}
-
-@MainActor
-@Observable
-private final class LaunchAtLoginController {
-    private(set) var status = SMAppService.mainApp.status
-    private(set) var isChanging = false
-    private(set) var lastError: String?
-
-    var isRequested: Bool {
-        status == .enabled || status == .requiresApproval
-    }
-
-    var requiresApproval: Bool {
-        status == .requiresApproval
-    }
-
-    func refresh() {
-        status = SMAppService.mainApp.status
-    }
-
-    func setEnabled(_ enabled: Bool) {
-        guard !isChanging else { return }
-        isChanging = true
-        defer { isChanging = false }
-
-        do {
-            if enabled {
-                try SMAppService.mainApp.register()
-            } else {
-                try SMAppService.mainApp.unregister()
-            }
-            lastError = nil
-        } catch {
-            lastError = String(
-                localized: "无法更新开机启动设置：\(error.localizedDescription)"
-            )
-        }
-        refresh()
-    }
-
-    func openSystemSettings() {
-        SMAppService.openSystemSettingsLoginItems()
-    }
 }

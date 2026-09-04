@@ -23,6 +23,7 @@ final class MacHubStore {
     private(set) var enabledClients: Set<LocalAIClient>
     private(set) var settingsNavigationRequest = 0
     private(set) var refreshIntervalSeconds: Int
+    private(set) var deviceSyncEnabled: Bool
     @ObservationIgnored
     let peerPublisher: MacPeerPublisher
     @ObservationIgnored
@@ -61,6 +62,7 @@ final class MacHubStore {
     private static let codexQuotaCachedAtKey = "CodexQuotaCachedAt"
     private static let antigravityQuotaCachedAtKey = "AntigravityQuotaCachedAt"
     private static let enabledClientsKey = "EnabledLocalAIClients"
+    private static let deviceSyncEnabledKey = "DeviceSyncEnabled"
     private static let clientDiscoveryInterval: TimeInterval = 5 * 60
     private static let quotaRefreshInterval: TimeInterval = 5 * 60
 
@@ -69,6 +71,10 @@ final class MacHubStore {
         enabledClients = LocalAIClient.enabledClients(
             fromStoredRawValues: defaults.stringArray(forKey: Self.enabledClientsKey)
         )
+        let initialDeviceSyncEnabled = defaults.object(forKey: Self.deviceSyncEnabledKey) != nil
+            ? defaults.bool(forKey: Self.deviceSyncEnabledKey)
+            : AppPreferenceDefaults.crossDeviceSyncEnabled
+        deviceSyncEnabled = initialDeviceSyncEnabled
         let initialRefreshIntervalSeconds: Int
         if defaults.object(forKey: Self.refreshIntervalKey) != nil {
             initialRefreshIntervalSeconds = min(
@@ -92,7 +98,7 @@ final class MacHubStore {
         codexDirectoryURL = discovered.first(where: { $0.client == .codex })?.rootDirectory
         lastClientDiscoveryAt = Date()
         snapshot = UsageSnapshot(generatedAt: Date(), providers: [])
-        peerPublisher = MacPeerPublisher()
+        peerPublisher = MacPeerPublisher(enabled: initialDeviceSyncEnabled)
         if let cached = try? cache.load(), Self.isNativeLocalSnapshot(cached) {
             let now = Date()
             let cachedAt = UserDefaults.standard.object(
@@ -335,12 +341,23 @@ final class MacHubStore {
     }
 
     func publishCurrentSnapshot() {
+        guard deviceSyncEnabled else {
+            statusText = "iPhone 与 Apple Watch 数据传输已关闭"
+            return
+        }
         guard !snapshot.providers.isEmpty else {
             statusText = "暂无可推送的真实数据"
             return
         }
         peerPublisher.publish(snapshot.refreshed(at: Date()))
         statusText = "已向已配对 iPhone 推送"
+    }
+
+    func setDeviceSyncEnabled(_ enabled: Bool) {
+        guard deviceSyncEnabled != enabled else { return }
+        deviceSyncEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.deviceSyncEnabledKey)
+        peerPublisher.setEnabled(enabled)
     }
 
     private func startAutomaticRefresh() {

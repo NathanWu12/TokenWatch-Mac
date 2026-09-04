@@ -27,10 +27,12 @@ func localizedAppString(_ value: String.LocalizationValue, locale: Locale) -> St
 @main
 struct TokenWatchMacApp: App {
     @State private var store = MacHubStore()
+    @StateObject private var updateController = MacUpdateController()
     @State private var languageIdentifier: String
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        LaunchAtLoginController.applyDefaultPreference()
         _languageIdentifier = State(
             initialValue: AppLanguagePreferences.initialIdentifier()
         )
@@ -52,19 +54,31 @@ struct TokenWatchMacApp: App {
 
     var body: some Scene {
         WindowGroup("TokenWatch", id: "dashboard") {
-            MacHubView(store: store, languageIdentifier: languageBinding)
+            MacHubView(
+                store: store,
+                updateController: updateController,
+                languageIdentifier: languageBinding
+            )
                 .frame(minWidth: 980, minHeight: 680)
+                .overlay(alignment: .topTrailing) {
+                    UpdateAvailableBanner(updateController: updateController)
+                        .padding(16)
+                }
+                .onAppear {
+                    updateController.dashboardDidAppear()
+                }
                 .environment(\.locale, selectedLanguage.locale)
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         store.refreshAfterActivation()
+                        updateController.dashboardDidAppear()
                     }
                 }
         }
         .windowResizability(.contentMinSize)
 
         MenuBarExtra {
-            MenuBarDashboardView(store: store)
+            MenuBarDashboardView(store: store, updateController: updateController)
                 .environment(\.locale, selectedLanguage.locale)
         } label: {
             Image(
@@ -83,7 +97,11 @@ struct TokenWatchMacApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            MacSettingsView(store: store, languageIdentifier: languageBinding)
+            MacSettingsView(
+                store: store,
+                updateController: updateController,
+                languageIdentifier: languageBinding
+            )
                 .frame(width: 560, height: 520)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, selectedLanguage.locale)
