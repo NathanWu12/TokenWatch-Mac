@@ -17,6 +17,7 @@
 		51F28049870508DB0D6682C0 /* MacSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EE6F1CDCB9811171E8FCD2B /* MacSettingsView.swift */; };
 		564C434864D2425E72480D20 /* LocalTransport in Frameworks */ = {isa = PBXBuildFile; productRef = D4F7577DCAF295CBFCF9AAF0 /* LocalTransport */; };
 		683E441A645AD8579CEABFE3 /* RemoteSync in Frameworks */ = {isa = PBXBuildFile; productRef = 2768F8008888B9252EDA55E7 /* RemoteSync */; };
+		9A036F759AFC586D326713EC /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E870C5F194EE956498BA960 /* LaunchAtLoginController.swift */; };
 		9A84D17F1FC17482B389127F /* SyncSecurity in Frameworks */ = {isa = PBXBuildFile; productRef = 969D1DC0D043A260A25DF7B8 /* SyncSecurity */; };
 		A54432C78B5114D58A459C0F /* StatusPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E235318703E3C6B04FC81D46 /* StatusPresentation.swift */; };
 		AA027667663997055B642AFB /* MacHubStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A240ABE9445704B8E85453 /* MacHubStore.swift */; };
@@ -38,6 +39,7 @@
 		692503A40F18F6C5075D5CCC /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		6EE6F1CDCB9811171E8FCD2B /* MacSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSettingsView.swift; sourceTree = "<group>"; };
 		7F300F161F5C9FA0AE5755DF /* MacUpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacUpdateController.swift; sourceTree = "<group>"; };
+		8E870C5F194EE956498BA960 /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
 		B52A6B848E6B5B11012620C0 /* MacHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHubView.swift; sourceTree = "<group>"; };
 		BF132BEC21AB3EC0B3B1E7A4 /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
 		C28C71272528693CDE4947F0 /* Sparkle-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Sparkle-LICENSE.txt"; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 			children = (
 				32C63F781AAE5135E9A8554D /* Assets.xcassets */,
 				DBE7EF14493526E118442E32 /* Info.plist */,
+				8E870C5F194EE956498BA960 /* LaunchAtLoginController.swift */,
 				692503A40F18F6C5075D5CCC /* Localizable.xcstrings */,
 				0BF35B604E243E14BE888519 /* MacHub.entitlements */,
 				C7D727D754CA225039BBBF40 /* MacHubLocalOnly.entitlements */,
@@ -228,6 +231,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A036F759AFC586D326713EC /* LaunchAtLoginController.swift in Sources */,
 				AA027667663997055B642AFB /* MacHubStore.swift in Sources */,
 				DA07703BE7D8A98C9DD0592A /* MacHubView.swift in Sources */,
 				B3DEDD090939BDF36C49B9D2 /* MacPeerPublisher.swift in Sources */,

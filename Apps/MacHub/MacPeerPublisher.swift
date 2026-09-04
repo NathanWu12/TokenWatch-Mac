@@ -24,10 +24,13 @@ final class MacPeerPublisher {
     )
 
     private(set) var connectedPeers: [String] = []
-    private(set) var pairingCode: String
-    private(set) var stateText: String.LocalizationValue = "正在等待 iPhone"
-    private(set) var remoteStatusText: String.LocalizationValue = "远程同步等待首次配对"
+    private(set) var pairingCode = String(localized: "不可用")
+    private(set) var isEnabled: Bool
+    private(set) var stateText: String.LocalizationValue = "iPhone 与 Apple Watch 数据传输已关闭"
+    private(set) var remoteStatusText: String.LocalizationValue = "远程同步已关闭"
 
+    @ObservationIgnored
+    private var pairingSecretLoaded = false
     @ObservationIgnored
     private var listener: NWListener?
     @ObservationIgnored
@@ -35,9 +38,9 @@ final class MacPeerPublisher {
     @ObservationIgnored
     private var rejectedPairingAttempts: [Date] = []
     @ObservationIgnored
-    private let identity: DeviceIdentity?
+    private var identity: DeviceIdentity?
     @ObservationIgnored
-    private let mailbox: CloudKitSnapshotMailbox?
+    private var mailbox: CloudKitSnapshotMailbox?
     @ObservationIgnored
     private let pairedStore = MacPairedPhoneStore()
     @ObservationIgnored
@@ -53,6 +56,8 @@ final class MacPeerPublisher {
     @ObservationIgnored
     private var remoteRetryAttempt = 0
     @ObservationIgnored
+    private var remotePublishGeneration = 0
+    @ObservationIgnored
     var onAuthenticatedPeerConnected: (() -> Void)?
 
     var pairedDevices: [PairedPhone] {
@@ -66,27 +71,16 @@ final class MacPeerPublisher {
             ?? String(localized: "不可用")
     }
 
-    init() {
-        let initialPairingCode = try? PairingSecretStore.loadOrCreateCode()
-        let keychain = KeychainDeviceStore(service: "com.nathanwu.TokenWatch.device")
-        let loadedIdentity = try? keychain.loadOrCreateIdentity(account: "mac-hub-identity")
-        identity = loadedIdentity
-        mailbox = Self.hasCloudKitEntitlement()
-            ? CloudKitSnapshotMailbox(
-                containerIdentifier: "iCloud.com.nathanwu.TokenWatch"
-            )
-            : nil
-        pairingCode = initialPairingCode ?? String(localized: "不可用")
+    init(enabled: Bool = false) {
+        isEnabled = enabled
         pairedPhones = (try? pairedStore.load())
             .map { Dictionary(uniqueKeysWithValues: $0.map { ($0.deviceId, $0) }) } ?? [:]
 
-        if initialPairingCode == nil || loadedIdentity == nil {
-            stateText = "Keychain 不可用，已停用新配对"
+        if enabled {
+            configureTransport()
         } else {
-            startListener()
-            if !pairedPhones.isEmpty {
-                remoteStatusText = "远程同步将在数据更新后写入 iCloud"
-            }
+            stateText = "iPhone 与 Apple Watch 数据传输已关闭"
+            remoteStatusText = "远程同步已关闭"
         }
     }
 
@@ -98,8 +92,36 @@ final class MacPeerPublisher {
 
     func publish(_ snapshot: UsageSnapshot) {
         latestSnapshot = snapshot
+        guard isEnabled else { return }
         sendLatest()
         enqueueRemote(snapshot)
+    }
+
+    func setEnabled(_ enabled: Bool) {
+        guard isEnabled != enabled else { return }
+        isEnabled = enabled
+        remotePublishGeneration += 1
+
+        if enabled {
+            configureTransport()
+            guard identity != nil, pairingSecretLoaded else { return }
+            if let latestSnapshot {
+                sendLatest()
+                enqueueRemote(latestSnapshot, force: true)
+            }
+        } else {
+            remotePublishTask?.cancel()
+            remotePublishTask = nil
+            pendingRemoteSnapshot = nil
+            mailbox = nil
+            listener?.cancel()
+            listener = nil
+            sessions.values.forEach { $0.cancel() }
+            sessions.removeAll()
+            updateConnectedPeers()
+            stateText = "iPhone 与 Apple Watch 数据传输已关闭"
+            remoteStatusText = "远程同步已关闭"
+        }
     }
 
     func rotatePairingCode() {
@@ -108,6 +130,7 @@ final class MacPeerPublisher {
             return
         }
         pairingCode = next
+        pairingSecretLoaded = true
         sessions.values.forEach { $0.cancel() }
         sessions.removeAll()
         updateConnectedPeers()
@@ -140,7 +163,42 @@ final class MacPeerPublisher {
         }
     }
 
+
+    private func configureTransport() {
+        if !pairingSecretLoaded {
+            guard let code = try? PairingSecretStore.loadOrCreateCode() else {
+                stateText = "Keychain 不可用，已停用新配对"
+                remoteStatusText = "远程同步不可用：设备密钥缺失"
+                return
+            }
+            pairingCode = code
+            pairingSecretLoaded = true
+        }
+
+        if identity == nil {
+            let keychain = KeychainDeviceStore(service: "com.nathanwu.TokenWatch.device")
+            identity = try? keychain.loadOrCreateIdentity(account: "mac-hub-identity")
+        }
+        guard identity != nil else {
+            stateText = "Keychain 不可用，已停用新配对"
+            remoteStatusText = "远程同步不可用：设备密钥缺失"
+            return
+        }
+
+        if mailbox == nil, Self.hasCloudKitEntitlement() {
+            mailbox = CloudKitSnapshotMailbox(
+                containerIdentifier: "iCloud.com.nathanwu.TokenWatch"
+            )
+        }
+
+        startListener()
+        remoteStatusText = pairedPhones.isEmpty
+            ? "远程同步等待首次配对"
+            : "远程同步将在数据更新后写入 iCloud"
+    }
+
     private func startListener() {
+        guard isEnabled, listener == nil else { return }
         do {
             let listener = try NWListener(using: .tcp)
             listener.service = NWListener.Service(
@@ -166,6 +224,7 @@ final class MacPeerPublisher {
     }
 
     private func handleListenerState(_ state: NWListener.State) {
+        guard isEnabled else { return }
         switch state {
         case .ready:
             stateText = "正在等待 iPhone"
@@ -187,7 +246,8 @@ final class MacPeerPublisher {
     }
 
     private func accept(_ connection: NWConnection) {
-        guard let identity,
+        guard isEnabled,
+              let identity,
               let nonce = Self.secureRandomData(count: 32) else {
             connection.cancel()
             return
@@ -301,6 +361,7 @@ final class MacPeerPublisher {
     }
 
     private func sendLatest() {
+        guard isEnabled else { return }
         guard latestSnapshot != nil else { return }
         var successful = 0
         for session in sessions.values where session.phone != nil {
@@ -315,6 +376,7 @@ final class MacPeerPublisher {
 
     @discardableResult
     private func sendLatest(to session: MacLocalSession) -> Bool {
+        guard isEnabled else { return false }
         guard let latestSnapshot,
               let identity,
               let phone = session.phone else {
@@ -336,6 +398,7 @@ final class MacPeerPublisher {
     }
 
     private func enqueueRemote(_ snapshot: UsageSnapshot, force: Bool = false) {
+        guard isEnabled else { return }
         if !force {
             if let pendingRemoteSnapshot,
                pendingRemoteSnapshot.hasSameContent(as: snapshot) {
@@ -350,16 +413,30 @@ final class MacPeerPublisher {
 
         pendingRemoteSnapshot = snapshot
         guard remotePublishTask == nil else { return }
+        let generation = remotePublishGeneration
         remotePublishTask = Task { [weak self] in
-            await self?.drainRemoteSnapshots()
+            await self?.drainRemoteSnapshots(generation: generation)
         }
     }
 
-    private func drainRemoteSnapshots() async {
-        defer { remotePublishTask = nil }
-        while !Task.isCancelled, let next = pendingRemoteSnapshot {
+    private func drainRemoteSnapshots(generation: Int) async {
+        defer {
+            if generation == remotePublishGeneration {
+                remotePublishTask = nil
+            }
+        }
+        while isEnabled,
+              generation == remotePublishGeneration,
+              !Task.isCancelled,
+              let next = pendingRemoteSnapshot {
             pendingRemoteSnapshot = nil
-            switch await publishRemoteNow(next) {
+            let result = await publishRemoteNow(next, generation: generation)
+            guard isEnabled,
+                  generation == remotePublishGeneration,
+                  !Task.isCancelled else {
+                return
+            }
+            switch result {
             case .success:
                 lastRemoteSnapshot = next
                 remoteRetryAttempt = 0
@@ -388,7 +465,15 @@ final class MacPeerPublisher {
         }
     }
 
-    private func publishRemoteNow(_ snapshot: UsageSnapshot) async -> RemotePublishResult {
+    private func publishRemoteNow(
+        _ snapshot: UsageSnapshot,
+        generation: Int
+    ) async -> RemotePublishResult {
+        guard isEnabled,
+              generation == remotePublishGeneration,
+              !Task.isCancelled else {
+            return .unavailable
+        }
         guard let identity else {
             remoteStatusText = "远程同步不可用：设备密钥缺失"
             return .unavailable
@@ -406,7 +491,11 @@ final class MacPeerPublisher {
         remoteStatusText = "正在更新远程加密快照"
         var successes = 0
         for phone in phones {
-            guard !Task.isCancelled else { return .unavailable }
+            guard isEnabled,
+                  generation == remotePublishGeneration,
+                  !Task.isCancelled else {
+                return .unavailable
+            }
             do {
                 let data = try makeEnvelopeData(
                     snapshot: snapshot,
@@ -414,6 +503,11 @@ final class MacPeerPublisher {
                     phone: phone
                 )
                 try await mailbox.saveLatest(data, recipientDeviceId: phone.deviceId)
+                guard isEnabled,
+                      generation == remotePublishGeneration,
+                      !Task.isCancelled else {
+                    return .unavailable
+                }
                 successes += 1
             } catch {
                 Self.logger.error("Unable to update encrypted CloudKit snapshot")

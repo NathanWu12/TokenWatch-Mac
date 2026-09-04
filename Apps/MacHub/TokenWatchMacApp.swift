@@ -32,6 +32,7 @@ struct TokenWatchMacApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        LaunchAtLoginController.applyDefaultPreference()
         _languageIdentifier = State(
             initialValue: AppLanguagePreferences.initialIdentifier()
         )
