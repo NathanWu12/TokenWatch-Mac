@@ -1,7 +1,7 @@
 <div align="center">
   <img src="Apps/MacHub/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="TokenWatch Mac 图标">
   <h1>TokenWatch Mac</h1>
-  <p><strong>轻量、低占用、适合长期常驻的 macOS 本地 AI 用量与额度中心。</strong></p>
+  <p><strong>原生 Swift · Universal DMG 约 5.3 MB · 空闲 CPU 接近 0 · 为长期常驻而设计。</strong></p>
   <p>Codex · Claude Code · Antigravity · OpenCode</p>
 </div>
 
@@ -39,6 +39,45 @@ TokenWatch Mac 针对菜单栏长期运行进行了低开销设计：
 | 紧接着无变化刷新 | 全量重扫 | **0.82 秒 / ~34 MiB 峰值** |
 
 以上数据衡量采集/导出路径，并不等同于 App 常驻 RSS；实际表现会随日志规模、存储和硬件变化。
+
+## 小体积、低占用是架构结果
+
+TokenWatch Mac 使用 **原生 Swift / SwiftUI / AppKit** 开发，直接复用 macOS 自带系统 Framework。当前 Universal Release **没有内嵌 Frameworks 目录，不捆绑 Chromium、Electron 或 Node.js 运行时**。
+
+2026-09-05 对当前公开 Release 实测：
+
+| 指标 | 实测值 |
+| --- | ---: |
+| Universal DMG（arm64 + x86_64） | **5.3 MB** |
+| 安装后的 `.app` | **约 11 MB** |
+| 主可执行文件 | **约 8.0 MB** |
+| 内嵌运行时 Framework | **0** |
+| 空闲时常驻子进程 | **0** |
+| 运行约 1.5 小时后的空闲 `top` MEM | **约 45 MB** |
+| 空闲 `ps` RSS | **约 121 MiB** |
+| 连续 6 次、每次 1 秒的空闲采样 | **CPU 0.0% / POWER 0.0** |
+
+这里同时给出 `top` MEM 与 `ps` RSS，因为 macOS 的不同内存工具统计口径不同；RSS 会包含共享映射，不能直接理解为“私有独占内存”。`POWER 0.0` 是 macOS `top` 的相对进程功耗指标，**不是瓦特数**。更长采样会捕捉到短暂刷新峰值，但完成后会立即回到空闲状态。
+
+### 放到当前 Mac 的硬件价格里是什么量级
+
+截至 **2026-09-05**，Apple 当前 M6 Mac mini 配置器中，相邻 **8 GB 统一内存档位差价为 $200**，**256 GB → 512 GB SSD 差价为 $200**；M6 Mac mini 美国起售价为 **$899**。
+
+如果仅把这些官方升级价作为一个便于理解的**容量等价换算**：
+
+- 约 45 MB 空闲 `top` 内存只相当于 24 GB 的 **约 0.19%**；按 $25/GB 的内存档位差价折算，约 **$1.1** 的容量。
+- 约 11 MB 安装体积只占 256 GB 的 **约 0.004%**；按 Apple SSD 档位差价折算，约 **$0.01**。
+- 5.3 MB 下载包只占 256 GB 的 **约 0.002%**，同口径折算 **不到半美分**。
+
+这**不是成本会计结论**：Apple 的配置升级价不等于 RAM/SSD 的制造成本。这里只是用用户熟悉的 Mac 配置价格帮助理解“到底有多小”。
+
+### 为什么原生 Swift 值得强调
+
+原生方案可以直接使用 macOS 已经安装的系统 Framework，而不需要把浏览器运行时一起打包。作为量级参考，Electron **v44.0.0** 的 macOS arm64 runtime ZIP 本身就有 **129,743,965 bytes（约 123.7 MiB）**，还没有包含具体应用自己的代码与资源。TokenWatch 的 **5.3 MB Universal DMG** 同时包含 Apple Silicon 和 Intel 两套架构，仍然比这个 Electron 压缩运行时本身小 **约 23 倍**。
+
+Electron 官方也明确说明其继承 Chromium 的多进程模型，包括 main process 与 renderer process。TokenWatch 当前空闲时没有常驻子进程。这里比较的是**框架运行时基线，不是在声称所有非 Swift 应用或所有同类项目都很重**；事实上，这个细分领域里也有不少优秀项目采用原生 Swift。
+
+资料来源：[Apple M6 Mac mini 发布信息](https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/) · [Apple M6 Mac mini 配置器](https://www.apple.com/shop/buy-mac/mac-mini/m6-chip-12-core-cpu-12-core-gpu-24gb-memory-256gb-storage) · [Electron v44.0.0 Release](https://github.com/electron/electron/releases/tag/v44.0.0) · [Electron 进程模型](https://www.electronjs.org/docs/latest/tutorial/process-model)
 
 ## 界面截图
 

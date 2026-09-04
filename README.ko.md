@@ -12,6 +12,18 @@ Codex 영구 증분 인덱스는 새로 추가된 바이트만 읽고 FSEvents�
 
 약 **810 MB의 Codex 기록**을 사용한 참고 측정: 콜드 수집 **3.23초 / 약 127 MiB**, 인덱스가 있는 증분 수집 **0.86초 / 약 34 MiB**, 변경 없음 **0.82초 / 약 34 MiB**. 이는 수집 / 내보내기 경로의 피크이며 앱의 상시 RSS와 동일하지 않습니다.
 
+## 작은 크기와 낮은 오버헤드는 구조에서 나옵니다
+
+TokenWatch Mac은 **네이티브 Swift / SwiftUI / AppKit**으로 개발되며 macOS 시스템 Framework를 직접 사용합니다. 현재 Universal Release에는 **임베디드 Frameworks, Chromium, Electron, Node.js runtime이 없습니다**.
+
+2026-09-05 실측: Universal DMG **5.3 MB**, 설치된 `.app` **약 11 MB**. 약 1.5시간 실행 후 유휴 상태에서 `top` MEM **약 45 MB**, 1초 간격 6회 연속 샘플에서 **CPU 0.0% / POWER 0.0**이었습니다. `ps` RSS는 공유 매핑을 포함해 **약 121 MiB**입니다. `POWER`는 `top`의 상대 지표이며 와트 측정값이 아닙니다.
+
+현재 Apple M6 Mac mini 구성기(2026-09-05)에서 인접한 8 GB 통합 메모리 단계와 256→512 GB SSD 단계는 각각 **$200** 차이입니다. 단순 용량 등가로 보면 45 MB는 24 GB의 **약 0.19% / 약 $1.1 상당**, 11 MB 앱은 256 GB의 **약 0.004% / 약 $0.01 상당**입니다. 실제 하드웨어 원가를 의미하지 않습니다.
+
+Electron v44.0.0 macOS arm64 runtime ZIP은 **약 123.7 MiB**입니다. TokenWatch의 5.3 MB Universal DMG는 Apple Silicon과 Intel 바이너리를 모두 포함하면서도 그 압축 runtime 자체보다 **약 23배 작습니다**. 이는 프레임워크 기준 비교이며 모든 비-Swift 앱이나 경쟁 앱이 무겁다는 뜻은 아닙니다.
+
+Sources: [Apple M6 Mac mini](https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/) · [Apple configurator](https://www.apple.com/shop/buy-mac/mac-mini/m6-chip-12-core-cpu-12-core-gpu-24gb-memory-256gb-storage) · [Electron v44.0.0](https://github.com/electron/electron/releases/tag/v44.0.0) · [Electron process model](https://www.electronjs.org/docs/latest/tutorial/process-model)
+
 ## 스크린샷
 
 <p align="center">

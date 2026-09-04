@@ -12,6 +12,18 @@ L'index incrémental persistant de Codex ne lit que les nouveaux octets. FSEvent
 
 Mesure de référence avec environ **810 MB d'historique Codex** : collecte à froid **3,23 s / ~127 MiB**, collecte incrémentale avec index **0,86 s / ~34 MiB**, actualisation sans changement **0,82 s / ~34 MiB**. Ces chiffres correspondent aux pics du chemin de collecte / export et non au RSS permanent de l'application.
 
+## Une petite empreinte par conception
+
+TokenWatch Mac est développé en **Swift / SwiftUI / AppKit natif** et réutilise directement les frameworks de macOS. La version Universal actuelle n'embarque **ni dossier Frameworks, ni Chromium, ni Electron, ni runtime Node.js**.
+
+Mesures du 2026-09-05 : DMG Universal **5,3 MB**, application installée **~11 MB**. Après ~1,5 h d'exécution, `top` indiquait **~45 MB** en veille ; six échantillons d'une seconde ont affiché **0,0 % CPU / POWER 0,0**. Le RSS `ps`, qui inclut les mappings partagés, était de **~121 MiB**. `POWER` est un indicateur relatif de `top`, pas une mesure en watts.
+
+Sur le configurateur actuel du Mac mini M6 d'Apple (2026-09-05), un palier adjacent de 8 GB de mémoire unifiée coûte **$200** et le passage SSD 256→512 GB coûte **$200**. À titre d'illustration de capacité uniquement, 45 MB représentent **~0,19 % de 24 GB, soit ~1,1 $**, et 11 MB représentent **~0,004 % de 256 GB, soit ~0,01 $**. Ce n'est pas une estimation du coût réel du matériel.
+
+Le runtime macOS arm64 d'Electron v44.0.0 est distribué sous forme d'un ZIP d'environ **123,7 MiB**. Le DMG Universal de TokenWatch, **5,3 MB** et contenant Apple Silicon + Intel, est encore **~23× plus petit que cette archive runtime compressée seule**. Il s'agit d'une comparaison de base de framework, pas d'une affirmation selon laquelle toutes les applications non-Swift ou concurrentes seraient lourdes.
+
+Sources : [Apple M6 Mac mini](https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/) · [Configurateur Apple](https://www.apple.com/shop/buy-mac/mac-mini/m6-chip-12-core-cpu-12-core-gpu-24gb-memory-256gb-storage) · [Electron v44.0.0](https://github.com/electron/electron/releases/tag/v44.0.0) · [Modèle de processus Electron](https://www.electronjs.org/docs/latest/tutorial/process-model)
+
 ## Captures d'écran
 
 <p align="center">

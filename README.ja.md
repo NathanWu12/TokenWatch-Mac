@@ -12,6 +12,18 @@ Codex は永続インクリメンタル索引で追加されたバイトだけ�
 
 約 **810 MB の Codex 履歴**を使用した参考測定：冷間収集 **3.23秒 / 約127 MiB**、索引作成後の増分収集 **0.86秒 / 約34 MiB**、変更なし **0.82秒 / 約34 MiB**。これらは収集 / エクスポート経路のピーク値であり、アプリの常時 RSS ではありません。
 
+## 小ささと低負荷はアーキテクチャの結果
+
+TokenWatch Mac は **ネイティブ Swift / SwiftUI / AppKit** で実装され、macOS 標準 Framework を直接利用します。現在の Universal Release には **埋め込み Frameworks、Chromium、Electron、Node.js runtime がありません**。
+
+2026-09-05 の実測では、Universal DMG は **5.3 MB**、インストール後の `.app` は **約 11 MB**。約 1.5 時間稼働後のアイドル状態で `top` MEM は **約 45 MB**、6 回連続の 1 秒サンプルは **CPU 0.0% / POWER 0.0** でした。`ps` RSS は共有マッピングを含め **約 121 MiB** です。`POWER` は `top` の相対指標であり、ワット測定ではありません。
+
+Apple の現行 M6 Mac mini 構成（2026-09-05）では、隣接する 8 GB unified memory の差額と 256→512 GB SSD の差額はいずれも **$200**。単なる容量換算として見ると、45 MB は 24 GB の **約 0.19% / 約 $1.1 相当**、11 MB の App は 256 GB の **約 0.004% / 約 $0.01 相当**です。これは実コストの主張ではありません。
+
+Electron v44.0.0 の macOS arm64 runtime ZIP は **約 123.7 MiB**。TokenWatch の 5.3 MB Universal DMG は Intel と Apple Silicon の両方を含みながら、その圧縮 runtime 単体より **約 23 倍小さい**サイズです。これはフレームワーク基準の比較であり、すべての非 Swift アプリや競合アプリが重いという主張ではありません。
+
+Sources: [Apple M6 Mac mini](https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/) · [Apple configurator](https://www.apple.com/shop/buy-mac/mac-mini/m6-chip-12-core-cpu-12-core-gpu-24gb-memory-256gb-storage) · [Electron v44.0.0](https://github.com/electron/electron/releases/tag/v44.0.0) · [Electron process model](https://www.electronjs.org/docs/latest/tutorial/process-model)
+
 ## スクリーンショット
 
 <p align="center">
