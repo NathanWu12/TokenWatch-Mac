@@ -43,7 +43,15 @@ while (( $# > 0 )); do
 done
 
 if [[ "$skip_build" != true ]]; then
-  "$root/Scripts/build-mac-local-release"
+  if [[ -n "$release_tag" ]]; then
+    [[ "$release_tag" == v* && "$release_tag" != "v" ]] || {
+      print -u2 "Release tag 必须以 v 开头并包含版本号"
+      exit 2
+    }
+    TOKENWATCH_MARKETING_VERSION="${release_tag#v}" "$root/Scripts/build-mac-local-release"
+  else
+    "$root/Scripts/build-mac-local-release"
+  fi
 fi
 
 app="$release_dir/DerivedData/Build/Products/Release/TokenWatch Mac.app"
@@ -52,8 +60,8 @@ app="$release_dir/DerivedData/Build/Products/Release/TokenWatch Mac.app"
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
 build_number="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$app/Contents/Info.plist")"
 [[ -n "$release_tag" ]] || release_tag="v${version}"
-[[ "$release_tag" == "v${version}"* ]] || {
-  print -u2 "Release tag ($release_tag) 必须以 v${version} 开头"
+[[ "$release_tag" == "v${version}" ]] || {
+  print -u2 "Release tag ($release_tag) 必须与 App 版本 v${version} 完全一致"
   exit 1
 }
 

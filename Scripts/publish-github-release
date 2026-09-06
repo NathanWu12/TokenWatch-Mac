@@ -49,6 +49,8 @@ done
 
 [[ -n "$release_tag" ]] || { print -u2 "必须提供 --tag"; exit 2; }
 [[ "$release_tag" != "update-feed" ]] || { print -u2 "update-feed 是保留的更新源 tag"; exit 2; }
+[[ "$release_tag" == v* && "$release_tag" != "v" ]] || { print -u2 "Release tag 必须以 v 开头并包含版本号"; exit 2; }
+release_version="${release_tag#v}"
 [[ -z "$notes_file" || -f "$notes_file" ]] || { print -u2 "Release notes 不存在：$notes_file"; exit 1; }
 command -v gh >/dev/null 2>&1 || { print -u2 "需要 GitHub CLI (gh)"; exit 1; }
 gh auth status >/dev/null
@@ -73,11 +75,15 @@ if gh release view "$release_tag" --repo "$repo" >/dev/null 2>&1; then
 fi
 
 # Build download artifacts first, then sign the exact ZIP that will be uploaded.
-"$root/Scripts/build-mac-dmg"
+TOKENWATCH_MARKETING_VERSION="$release_version" "$root/Scripts/build-mac-dmg"
 "$root/Scripts/build-update-feed" --tag "$release_tag" --skip-build
 
 app="$release_dir/DerivedData/Build/Products/Release/TokenWatch Mac.app"
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
+[[ "$version" == "$release_version" ]] || {
+  print -u2 "Release tag 与 App 版本不一致：tag=$release_tag, CFBundleShortVersionString=$version"
+  exit 1
+}
 zip="$release_dir/TokenWatch-Mac-v${version}-local-preview.zip"
 dmg="$release_dir/TokenWatch-Mac-v${version}-preview.dmg"
 appcast="$release_dir/appcast.xml"

@@ -12,17 +12,17 @@ TokenWatch uses Sparkle 2 for in-app updates. Release archives are signed with a
 
 ## Release flow
 
-1. Update `MARKETING_VERSION` and increment `CURRENT_PROJECT_VERSION` in `Configs/Production.xcconfig`, then commit and merge to `main`.
+1. Increment `CURRENT_PROJECT_VERSION` in `Configs/Production.xcconfig`, then commit and merge to `main`. Change the base `MARKETING_VERSION` only when the product version line changes (for example, from `0.1.0` to `0.2.0`). Preview identifiers are supplied by the release tag at package time.
 2. On the release Mac, sync `main` so `HEAD == origin/main` and the worktree is clean.
 3. Publish with, for example:
 
    ```sh
-   ./Scripts/publish-github-release --tag v0.1.0-preview.2 --prerelease
+   ./Scripts/publish-github-release --tag v0.1.0-preview.4 --prerelease
    ```
 
    Add `--notes path/to/release-notes.md` when release notes are prepared.
 
-The script builds the Universal app, ZIP and DMG, validates the embedded Sparkle feed/public key, signs `appcast.xml`, creates the version release as a **draft**, uploads and verifies every asset, publishes the version release, and only then replaces `appcast.xml` in the fixed `update-feed` release. This ordering guarantees clients never receive metadata pointing to a draft or incomplete release.
+The script derives the packaged `CFBundleShortVersionString` from the release tag (for example, `v0.1.0-preview.4` becomes `0.1.0-preview.4`), then builds the Universal app, ZIP and DMG. It rejects the release if the tag and packaged app version differ, validates the embedded Sparkle feed/public key, signs `appcast.xml`, creates the version release as a **draft**, uploads and verifies every asset, publishes the version release, and only then replaces `appcast.xml` in the fixed `update-feed` release. This keeps the Settings UI, Sparkle UI, artifacts and GitHub Release on one version identity and guarantees clients never receive metadata pointing to a draft or incomplete release.
 
 GitHub's `/releases/latest` endpoint excludes prereleases, so TokenWatch intentionally uses the stable direct feed URL:
 

@@ -23,6 +23,17 @@ fi
 
 mkdir -p "$release_dir"
 
+marketing_version="${TOKENWATCH_MARKETING_VERSION:-}"
+build_settings=(
+  "CODE_SIGN_ENTITLEMENTS=$root/Apps/MacHub/MacHubLocalOnly.entitlements"
+  "CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO"
+  "CODE_SIGN_IDENTITY=-"
+  "DEVELOPMENT_TEAM="
+)
+if [[ -n "$marketing_version" ]]; then
+  build_settings+=("MARKETING_VERSION=$marketing_version")
+fi
+
 xcodebuild \
   -project "$root/TokenWatchMac.xcodeproj" \
   -scheme MacHub \
@@ -30,10 +41,7 @@ xcodebuild \
   -destination "generic/platform=macOS" \
   -derivedDataPath "$derived_data" \
   -disableAutomaticPackageResolution \
-  CODE_SIGN_ENTITLEMENTS="$root/Apps/MacHub/MacHubLocalOnly.entitlements" \
-  CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
-  CODE_SIGN_IDENTITY=- \
-  DEVELOPMENT_TEAM= \
+  "${build_settings[@]}" \
   build
 
 app="$derived_data/Build/Products/Release/TokenWatch Mac.app"
@@ -114,6 +122,10 @@ rm -f "$smoke_log"
 
 version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")"
 build_number="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$app/Contents/Info.plist")"
+if [[ -n "$marketing_version" && "$version" != "$marketing_version" ]]; then
+  print -u2 "Release App 版本不匹配：期望 $marketing_version，实际 $version"
+  exit 1
+fi
 archive="$release_dir/TokenWatch-Mac-v${version}-local-preview.zip"
 checksum="$archive.sha256"
 
