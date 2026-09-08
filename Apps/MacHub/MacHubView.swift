@@ -76,9 +76,6 @@ struct MacHubView: View {
             .scrollContentBackground(.hidden)
             .background(MacTheme.sidebar)
             .navigationTitle("TokenWatch")
-            .safeAreaInset(edge: .bottom) {
-                SidebarStatus(store: store)
-            }
             .navigationSplitViewColumnWidth(min: 176, ideal: 204, max: 224)
         } detail: {
             Group {
@@ -114,50 +111,15 @@ struct MacHubView: View {
     }
 }
 
-private struct SidebarStatus: View {
-    @Bindable var store: MacHubStore
-    @Environment(\.locale) private var locale
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Divider()
-            HStack(spacing: 7) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 7, height: 7)
-                Text(localizedAppString(store.statusText, locale: locale))
-                    .lineLimit(1)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            Text("TokenWatch Native Collection")
-                .font(.caption2)
-                .foregroundStyle(MacTheme.muted)
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 14)
-        .padding(.bottom, 12)
-        .background(MacTheme.sidebar)
-    }
-
-    private var statusColor: Color {
-        if store.lastError != nil { return .orange }
-        if store.isRefreshing { return MacTheme.accent }
-        return .green
-    }
-}
-
 private struct UsageDashboard: View {
     @Bindable var store: MacHubStore
     @State private var selectedPeriod: UsagePeriod = .last30Days
-    @Environment(\.locale) private var locale
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 DashboardHeader(
                     title: "用量",
-                    subtitle: localizedAppString(store.statusText, locale: locale),
                     isRefreshing: store.isRefreshing,
                     refresh: { Task { await store.refresh() } }
                 )
@@ -165,23 +127,19 @@ private struct UsageDashboard: View {
                 PeriodSummaryGrid(snapshot: store.snapshot)
 
                 HStack(alignment: .top, spacing: 16) {
-                    UsageHeroCard(
-                        snapshot: store.snapshot,
-                        selectedPeriod: $selectedPeriod
-                    )
+                    VStack(spacing: 16) {
+                        UsageHeroCard(
+                            snapshot: store.snapshot,
+                            selectedPeriod: $selectedPeriod
+                        )
+                        UsageTrendCard(analytics: store.snapshot.analytics)
+                    }
                     .frame(maxWidth: .infinity)
 
-                    ProjectRankingCard(projects: store.snapshot.analytics?.projects ?? [])
-                        .frame(width: 310)
-                }
-
-                HStack(alignment: .top, spacing: 16) {
-                    UsageTrendCard(analytics: store.snapshot.analytics)
-                        .frame(maxWidth: .infinity)
-
                     VStack(spacing: 16) {
-                        ModelRankingCard(analytics: store.snapshot.analytics)
                         ActivityHeatmapCard(analytics: store.snapshot.analytics)
+                        ModelRankingCard(analytics: store.snapshot.analytics)
+                        ProjectRankingCard(projects: store.snapshot.analytics?.projects ?? [])
                     }
                     .frame(width: 310)
                 }
@@ -596,19 +554,13 @@ private struct MacProjectDetailView: View {
 
 private struct DashboardHeader: View {
     let title: LocalizedStringKey
-    let subtitle: String
     let isRefreshing: Bool
     let refresh: () -> Void
 
     var body: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 27, weight: .bold, design: .rounded))
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text(title)
+                .font(.system(size: 27, weight: .bold, design: .rounded))
             Spacer()
             Button(action: refresh) {
                 if isRefreshing {
@@ -985,7 +937,7 @@ private struct DailyUsageCard: View {
     let analytics: UsageAnalytics?
 
     private var days: [DailyTokenUsage] {
-        Array((analytics?.daily ?? []).suffix(14).reversed())
+        Array((analytics?.daily ?? []).reversed())
     }
 
     var body: some View {
@@ -1006,17 +958,21 @@ private struct DailyUsageCard: View {
                 EmptyCardLabel("暂无每日数据", symbol: "tablecells")
             } else {
                 ForEach(days.prefix(8)) { day in
+                    DailyUsageRow(day: day)
+                }
+
+                if days.count > 8 {
                     Divider().overlay(.white.opacity(0.05))
-                    HStack {
-                        Text(day.day)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(UsageFormatting.compactTokens(day.totalTokens))
-                            .fontWeight(.medium)
-                            .monospacedDigit()
+                    NavigationLink {
+                        DailyUsageListView(days: days)
+                    } label: {
+                        Label("查看更多", systemImage: "ellipsis.circle")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 9)
                     }
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 8)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(MacTheme.accent)
                 }
             }
         }
@@ -1024,9 +980,45 @@ private struct DailyUsageCard: View {
     }
 }
 
+private struct DailyUsageRow: View {
+    let day: DailyTokenUsage
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider().overlay(.white.opacity(0.05))
+            HStack {
+                Text(day.day)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(UsageFormatting.compactTokens(day.totalTokens))
+                    .fontWeight(.medium)
+                    .monospacedDigit()
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 8)
+        }
+    }
+}
+
+private struct DailyUsageListView: View {
+    let days: [DailyTokenUsage]
+
+    var body: some View {
+        List(days) { day in
+            HStack {
+                Text(day.day)
+                Spacer()
+                Text(UsageFormatting.compactTokens(day.totalTokens))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("每日明细")
+    }
+}
+
 private struct LimitsDashboard: View {
     @Bindable var store: MacHubStore
-    @Environment(\.locale) private var locale
 
     private var providers: [ProviderSnapshot] {
         store.snapshot.providers.filter { !$0.windows.isEmpty }
@@ -1041,7 +1033,6 @@ private struct LimitsDashboard: View {
             VStack(alignment: .leading, spacing: 16) {
                 DashboardHeader(
                     title: "限额",
-                    subtitle: localizedAppString(store.statusText, locale: locale),
                     isRefreshing: store.isRefreshing,
                     refresh: { Task { await store.refresh() } }
                 )
@@ -1167,13 +1158,11 @@ private struct SettingsDashboard: View {
     @Bindable var store: MacHubStore
     @ObservedObject var updateController: MacUpdateController
     @Binding var languageIdentifier: String
-    @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             DashboardHeader(
                 title: "设置",
-                subtitle: localizedAppString("采集、同步与设备", locale: locale),
                 isRefreshing: store.isRefreshing,
                 refresh: { Task { await store.refresh() } }
             )

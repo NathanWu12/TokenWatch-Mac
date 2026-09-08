@@ -29,11 +29,10 @@ public enum UsageFormatting {
     }
     public static func compactTokens(
         _ value: Int64,
-        estimated: Bool,
+        estimated _: Bool,
         locale: Locale = .current
     ) -> String {
-        let formatted = compactTokens(value, locale: locale)
-        return estimated ? "~\(formatted)" : formatted
+        compactTokens(value, locale: locale)
     }
 
 }
