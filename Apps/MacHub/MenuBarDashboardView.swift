@@ -26,8 +26,6 @@ struct MenuBarDashboardView: View {
                 }
             }
 
-            UpdateAvailableBanner(updateController: updateController)
-
             if store.enabledDetectedClientLocations.isEmpty {
                 Button {
                     store.requestSettingsNavigation()
