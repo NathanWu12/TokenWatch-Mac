@@ -146,7 +146,9 @@ private struct UsageDashboard: View {
 
                 DailyUsageCard(analytics: store.snapshot.analytics)
             }
-            .padding(20)
+            .padding(.top, 20)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
         }
     }
 }
@@ -1066,7 +1068,9 @@ private struct LimitsDashboard: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(.top, 20)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
         }
     }
 }
@@ -1173,7 +1177,9 @@ private struct SettingsDashboard: View {
                 languageIdentifier: $languageIdentifier
             )
         }
-        .padding(20)
+        .padding(.top, 20)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
     }
 }
 
