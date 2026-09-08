@@ -19,7 +19,7 @@ struct UsageSnapshotTests {
         #expect(UsageFormatting.compactTokens(999, locale: locale) == "999")
         #expect(UsageFormatting.compactTokens(1_200, locale: locale) == "1.2K")
         #expect(UsageFormatting.compactTokens(5_000_000, locale: locale) == "5M")
-        #expect(UsageFormatting.compactTokens(1_200, estimated: true, locale: locale) == "~1.2K")
+        #expect(UsageFormatting.compactTokens(1_200, estimated: true, locale: locale) == "1.2K")
     }
 
     @Test("older usage payloads default to known")
