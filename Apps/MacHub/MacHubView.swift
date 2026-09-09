@@ -1023,7 +1023,7 @@ private struct LimitsDashboard: View {
     @Bindable var store: MacHubStore
 
     private var providers: [ProviderSnapshot] {
-        store.snapshot.providers.filter { !$0.windows.isEmpty }
+        store.sortedQuotaProviders(store.snapshot.providers.filter { !$0.windows.isEmpty })
     }
 
     private var criticalCount: Int {
@@ -1061,7 +1061,9 @@ private struct LimitsDashboard: View {
                         ForEach(providers) { provider in
                             ProviderLimitCard(
                                 provider: provider,
-                                refreshedAt: store.snapshot.generatedAt
+                                refreshedAt: store.snapshot.generatedAt,
+                                isPreferred: provider.id == store.preferredQuotaProviderID,
+                                setPreferred: { store.setPreferredQuotaProvider(provider.id) }
                             )
                             .frame(maxWidth: .infinity)
                         }
@@ -1097,6 +1099,8 @@ private struct LimitSummaryMetric: View {
 private struct ProviderLimitCard: View {
     let provider: ProviderSnapshot
     let refreshedAt: Date
+    let isPreferred: Bool
+    let setPreferred: () -> Void
     @Environment(\.locale) private var locale
 
     var body: some View {
@@ -1114,6 +1118,13 @@ private struct ProviderLimitCard: View {
                         .font(.caption)
                 }
                 Spacer()
+                Button(action: setPreferred) {
+                    Image(systemName: isPreferred ? "pin.fill" : "pin")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(isPreferred ? MacTheme.accent : .secondary)
+                .help(isPreferred ? "主客户端" : "设为主客户端")
+                .accessibilityLabel(isPreferred ? "主客户端" : "设为主客户端")
             }
             ForEach(provider.windows) { window in
                 VStack(alignment: .leading, spacing: 7) {

@@ -24,6 +24,7 @@ final class MacHubStore {
     private(set) var settingsNavigationRequest = 0
     private(set) var refreshIntervalSeconds: Int
     private(set) var deviceSyncEnabled: Bool
+    private(set) var preferredQuotaProviderID: String
     @ObservationIgnored
     let peerPublisher: MacPeerPublisher
     @ObservationIgnored
@@ -63,6 +64,7 @@ final class MacHubStore {
     private static let antigravityQuotaCachedAtKey = "AntigravityQuotaCachedAt"
     private static let enabledClientsKey = "EnabledLocalAIClients"
     private static let deviceSyncEnabledKey = "DeviceSyncEnabled"
+    private static let preferredQuotaProviderKey = "PreferredQuotaProvider"
     private static let clientDiscoveryInterval: TimeInterval = 5 * 60
     private static let quotaRefreshInterval: TimeInterval = 5 * 60
 
@@ -71,6 +73,7 @@ final class MacHubStore {
         enabledClients = LocalAIClient.enabledClients(
             fromStoredRawValues: defaults.stringArray(forKey: Self.enabledClientsKey)
         )
+        preferredQuotaProviderID = defaults.string(forKey: Self.preferredQuotaProviderKey) ?? LocalAIClient.codex.rawValue
         let initialDeviceSyncEnabled = defaults.object(forKey: Self.deviceSyncEnabledKey) != nil
             ? defaults.bool(forKey: Self.deviceSyncEnabledKey)
             : AppPreferenceDefaults.crossDeviceSyncEnabled
@@ -311,6 +314,20 @@ final class MacHubStore {
 
     func isClientEnabled(_ client: LocalAIClient) -> Bool {
         enabledClients.contains(client)
+    }
+
+    func setPreferredQuotaProvider(_ providerID: String) {
+        preferredQuotaProviderID = providerID
+        UserDefaults.standard.set(providerID, forKey: Self.preferredQuotaProviderKey)
+    }
+
+    func sortedQuotaProviders(_ providers: [ProviderSnapshot]) -> [ProviderSnapshot] {
+        providers.sorted { lhs, rhs in
+            let lhsPreferred = lhs.id == preferredQuotaProviderID
+            let rhsPreferred = rhs.id == preferredQuotaProviderID
+            if lhsPreferred != rhsPreferred { return lhsPreferred }
+            return lhs.displayName < rhs.displayName
+        }
     }
 
     func setClientEnabled(_ client: LocalAIClient, enabled: Bool) {

@@ -119,7 +119,7 @@ struct TokenWatchMacApp: App {
 
     private var remainingValue: String {
         guard let remaining = store.snapshot.providers
-            .first(where: { !$0.windows.isEmpty })?
+            .first(where: { $0.id == store.preferredQuotaProviderID })?
             .windows.first?
             .remainingPercent
         else {

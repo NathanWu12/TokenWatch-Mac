@@ -70,7 +70,9 @@ struct MenuBarDashboardView: View {
 
             Text("限额 · 余量")
                 .font(.headline)
-            let limitProviders = store.snapshot.providers.filter { !$0.windows.isEmpty }
+            let limitProviders = store.sortedQuotaProviders(
+                store.snapshot.providers.filter { !$0.windows.isEmpty }
+            )
             if limitProviders.isEmpty {
                 Label("暂无额度数据", systemImage: "gauge.with.dots.needle.0percent")
                     .font(.caption)
@@ -79,7 +81,9 @@ struct MenuBarDashboardView: View {
                 ForEach(Array(limitProviders.prefix(3))) { provider in
                     MenuLimitProviderView(
                         provider: provider,
-                        refreshedAt: store.snapshot.generatedAt
+                        refreshedAt: store.snapshot.generatedAt,
+                        isPreferred: provider.id == store.preferredQuotaProviderID,
+                        setPreferred: { store.setPreferredQuotaProvider(provider.id) }
                     )
                 }
             }
@@ -134,11 +138,20 @@ struct MenuBarDashboardView: View {
 private struct MenuLimitProviderView: View {
     let provider: ProviderSnapshot
     let refreshedAt: Date
+    let isPreferred: Bool
+    let setPreferred: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Label(provider.displayName, systemImage: "bolt.circle.fill")
+                Button(action: setPreferred) {
+                    Image(systemName: isPreferred ? "pin.fill" : "pin")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(isPreferred ? MacTheme.accent : .secondary)
+                .help(isPreferred ? "主客户端" : "设为主客户端")
+                .accessibilityLabel(isPreferred ? "主客户端" : "设为主客户端")
                 Spacer()
                 ProviderCollectionStatusLabel(
                     provider: provider,
